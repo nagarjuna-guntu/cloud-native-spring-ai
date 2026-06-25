@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: dispatch-service
+
+server:
+  port: 4003
+
+spring.cloud.function:
+  definition: pack|label
+
+spring.cloud.stream:
+  bindings:
+    packlabel-in-0:
+      destination: order-accepted
+      group: ${spring.application.name}
+    packlabel-out-0:
+      destination: order-dispatched
+
+spring.rabbitmq:
+  host: localhost
+  port: 5672
+  username: user
+  password: password
+  connection-timeout: 5s
+
+management.endpoints:
+  web:
+    exposure:
+      include: health
+management.endpoint:
+  health:
+    show-details: always
+    show-components: always
+    probes:
+      enabled: true
+management.health:
+  binders:
+    enabled: true
+
+#OBSERVABILITY
+management.tracing.sampling.probability: 1.0
+
+management.opentelemetry:
+  logging:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/logs
+  tracing:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/traces
+management.otlp:
+  metrics:
+    export:
+      url: http://localhost:4318/v1/metrics

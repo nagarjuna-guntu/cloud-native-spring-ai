@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: edge-service
+
+server:
+  port: 4000
+
+spring.cloud.gateway.server.webflux:
+  httpclient:
+    connect-timeout: 2000
+    response-timeout: 5s
+  routes:
+    - id: catalog-route
+      uri: ${BOOK_CATALOG_SERVICE_URL:http://localhost:9011}/books
+      predicates:
+        - Path=/books/{*ISBN}
+    - id: order-route
+      uri: ${BOOK_ORDER_SERVICE_URL:http://localhost:9012}/orders
+      predicates:
+        - Path=/orders/**
+
+services:
+  order:
+    base-url: ${BOOK_ORDER_SERVICE_URL:http://127.0.0.1:9012}
+  catalog:
+    base-url: ${BOOK_CATALOG_SERVICE_URL:http://127.0.0.1:9011}
+
+#spring.http.clients.connect-timeout: 2s # Global setting
+spring.http.serviceclient:
+  order-service:
+    ##base-url: http://127.0.0.1:9012
+    connect-timeout: 2s
+    read-timeout: 3s
+  catalog-service:
+    ##base-url: http://127.0.0.1:9011
+    connect-timeout: 1s
+    read-timeout: 2s
+
+spring.data:
+  redis:
+    host: localhost
+    port: 6379
+    connect-timeout: 2s
+    timeout: 1s
+
+management.endpoints:
+  web:
+    exposure:
+      include: health
+management.endpoint:
+  health:
+    show-details: always
+    show-components: always
+    probes:
+      enabled: true
+    group:
+      readiness:
+        include: readinessState, redis
+
+#OBSERVABILITY
+spring.reactor.context-propagation: auto  # trace ID across the reactive thread boundaries of Netty, you must enable automatic context propagation
+management.tracing.sampling.probability: 1.0
+
+management.opentelemetry:
+  logging:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/logs
+  tracing:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/traces
+
+management.otlp:
+  metrics:
+    export:
+      url: http://localhost:4318/v1/metrics

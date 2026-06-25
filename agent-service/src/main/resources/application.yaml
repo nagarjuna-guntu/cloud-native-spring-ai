@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: agent-service
+
+server:
+  port: 4040
+
+spring.ai:
+  ollama:
+    base-url: http://localhost:11434
+    chat.options.model: llama3.2
+    embedding.options.model: nomic-embed-text-v2-moe
+    init.pull-model-strategy: when_missing
+  mcp.client:
+    name: book-shop-agent
+    version: 1.0.0
+    type: SYNC
+    toolcallback:
+      enabled: true
+    streamable-http:
+      connections:
+        catalog-mcp-server:
+          url: http://localhost:4001
+          endpoint: /mcp
+        order-mcp-server:
+          url: http://localhost:4002
+          endpoint: /mcp
+
+logging.level:
+  org.springframework.ai: DEBUG
+  com.bookshop.agent: DEBUG
