@@ -1,0 +1,92 @@
+spring:
+  application:
+    name: catalog-service
+
+server:
+  port: 4001
+
+spring.jackson:
+  deserialization:
+    fail-on-null-for-primitives: false
+
+spring.datasource:
+  username: user
+  password: secret
+  url: jdbc:postgresql://localhost:5432/polardb_catalog
+
+spring.cloud.function:
+  definition: bookCreatedConsumer;bookUpdatedConsumer
+
+spring.cloud.stream:
+  bindings:
+
+    # ----------- PRODUCERS -----------
+    bookCreated-out-0:
+      destination: book-created
+    bookUpdated-out-0:
+      destination: book-updated
+
+    # ----------- CONSUMERS -----------
+    bookCreatedConsumer-in-0:
+      destination: book-created
+      group: ${spring.application.name}
+    bookUpdatedConsumer-in-0:
+      destination: book-updated
+      group: ${spring.application.name}
+
+  # ----------- Transactional producers -----------
+  rabbit:
+    bindings:
+      bookCreated-out-0:
+        producer:
+          transacted: true
+      bookUpdated-out-0:
+        producer:
+          transacted: true
+spring.rabbitmq:
+  host: localhost
+  port: 5672
+  username: user
+  password: password
+  connection-timeout: 5s
+
+spring.data:
+  redis:
+    host: localhost
+    port: 6379
+    connect-timeout: 2s
+    timeout: 1s
+    repositories:
+      enabled: false  # prevent Redis from trying to manage your JPA/JDBC Repos
+
+spring.flyway:
+  baseline-on-migrate: true
+
+management.endpoints:
+  web:
+    exposure:
+      include: health, flyway
+management.endpoint:
+  health:
+    show-components: always
+    show-details: always
+    probes:
+      enabled: true
+
+#OBSERVABILITY
+management.tracing.sampling.probability: 1.0
+
+management.opentelemetry:
+  logging:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/logs
+  tracing:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/traces
+
+management.otlp:
+  metrics:
+    export:
+      url: http://localhost:4318/v1/metrics
