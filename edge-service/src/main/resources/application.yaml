@@ -11,19 +11,23 @@ spring.cloud.gateway.server.webflux:
     response-timeout: 5s
   routes:
     - id: catalog-route
-      uri: ${BOOK_CATALOG_SERVICE_URL:http://localhost:9011}/books
+      uri: ${BOOK_CATALOG_SERVICE_URL:http://localhost:4001}/books
       predicates:
         - Path=/books/{*ISBN}
     - id: order-route
-      uri: ${BOOK_ORDER_SERVICE_URL:http://localhost:9012}/orders
+      uri: ${BOOK_ORDER_SERVICE_URL:http://localhost:4002}/orders
       predicates:
         - Path=/orders/**
+    - id: agent-route
+      uri: ${BOOK_AGENT_SERVICE_URL:http://localhost:4004}/agent/chat
+      predicates:
+        - Path=/agent/**
 
 services:
   order:
-    base-url: ${BOOK_ORDER_SERVICE_URL:http://127.0.0.1:9012}
+    base-url: ${BOOK_ORDER_SERVICE_URL:http://127.0.0.1:4002}
   catalog:
-    base-url: ${BOOK_CATALOG_SERVICE_URL:http://127.0.0.1:9011}
+    base-url: ${BOOK_CATALOG_SERVICE_URL:http://127.0.0.1:4001}
 
 #spring.http.clients.connect-timeout: 2s # Global setting
 spring.http.serviceclient:

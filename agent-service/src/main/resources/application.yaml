@@ -3,7 +3,7 @@ spring:
     name: agent-service
 
 server:
-  port: 4040
+  port: 4004
 
 spring.ai:
   ollama:

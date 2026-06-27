@@ -1,6 +1,7 @@
 package com.bookshop.catalog.event;
 
-import com.bookshop.bookcatalogservice.web.BookResponse;
+
+import com.bookshop.catalog.web.BookResponse;
 import org.springframework.stereotype.Component;
 
 @Component

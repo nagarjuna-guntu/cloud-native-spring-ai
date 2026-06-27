@@ -3,15 +3,13 @@ package com.bookshop.catalog.domain;
 
 import com.bookshop.catalog.event.BookEventPublisher;
 import com.bookshop.catalog.event.BookEventType;
-import com.bookshop.catalog.web.BookMapper;
-import com.bookshop.catalog.web.BookResponse;
-import com.bookshop.catalog.web.BookValidator;
-import com.bookshop.catalog.web.CreateBookRequest;
+import com.bookshop.catalog.web.*;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.MapBindingResult;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -95,4 +93,9 @@ public class BookService {
         return bookBuilder.build();
     }
 
+    public List<BookResponse> getBooksByIsbns(List<String> isbns) {
+        return bookRepository.findAllByIsbnIn(isbns).stream()
+                .map(bookMapper::toBookResponse)
+                .toList();
+    }
 }

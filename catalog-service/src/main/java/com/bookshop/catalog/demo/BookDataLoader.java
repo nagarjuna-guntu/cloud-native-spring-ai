@@ -5,27 +5,40 @@ import com.bookshop.catalog.domain.Book;
 import com.bookshop.catalog.domain.BookRepository;
 import com.bookshop.catalog.domain.Publisher;
 import com.bookshop.catalog.web.BookMapper;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.event.EventListener;
+import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class BookDataLoader {
     private final BookRepository bookRepository;
     private final CacheManager cacheManager;
     private final BookMapper bookMapper;
+    private final VectorStore vectorStore;
+    private final JdbcClient jdbcClient;
 
-    public BookDataLoader(BookRepository bookRepository, CacheManager cacheManager, BookMapper bookMapper) {
+    public BookDataLoader(BookRepository bookRepository, CacheManager cacheManager, BookMapper bookMapper,
+                          VectorStore vectorStore, JdbcClient jdbcClient) {
         this.bookRepository = bookRepository;
         this.cacheManager = cacheManager;
         this.bookMapper = bookMapper;
+        this.vectorStore = vectorStore;
+        this.jdbcClient = jdbcClient;
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void loadData() {
         bookRepository.deleteAll();
+        jdbcClient.sql("DELETE FROM vector_store")
+                .update();
+
         var book1 = Book.of(
                 "1491910771",
                 "Head First Java: A Brain-Friendly Guide",
@@ -62,7 +75,28 @@ public class BookDataLoader {
         var books = List.of(book1, book2, book3, book4, book5, book6);
         var savedBooks = bookRepository.saveAll(books);
         preloadBookCaches(savedBooks);
+        preloadVectorStore(savedBooks);
 
+    }
+
+    private void preloadVectorStore(List<Book> savedBooks) {
+        var documents = savedBooks.stream()
+                .map(this::toDocument)
+                .toList();
+        vectorStore.add(documents);
+    }
+
+    private Document toDocument(Book book) {
+        String stableId = UUID.nameUUIDFromBytes(book.isbn().getBytes()).toString();
+        String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
+                book.title(), book.author(), book.publisher(), book.price());
+
+        Map<String, Object> metadata = Map.of(
+                "isbn", book.isbn(),
+                "price", book.price()
+        );
+
+        return new Document(stableId, content, metadata);
     }
 
     private void preloadBookCaches(List<Book> books) {
