@@ -34,18 +34,31 @@ public class OrderService {
         this.orderMapper = orderMapper;
     }
 
-    public Iterable<OrderResponse> findAll() {
+    public List<OrderResponse> findAll() {
         var orders = orderRepository.findAll();
         return orders.stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();
     }
 
-    public Iterable<OrderResponse> findOrdersByUser(String userName) {
+    public List<OrderResponse> findOrdersByUser(String userName) {
         var orders = orderRepository.findAllByCreatedBy(userName);
         return orders.stream()
                 .map(orderMapper::toOrderResponse)
                 .toList();
+    }
+
+    @Transactional
+    public OrderResponse placeOrder(String title, int quantity) {
+        var order = switch (bookClient.searchBook(title)) {
+            case Success(Book book) -> orderMapper.toAcceptedOrder(book, quantity);
+            case Failure(String reason, _) -> orderMapper.createRejectedOrder(title, quantity, reason);
+        };
+        Order savedOrder = orderRepository.save(order);
+        if (savedOrder.status() == OrderStatus.ACCEPTED) {
+            publishOrderAcceptedEvent(savedOrder);
+        }
+        return orderMapper.toOrderResponse(savedOrder);
     }
 
     @Transactional
@@ -90,4 +103,5 @@ public class OrderService {
                 .map(orderMapper::toOrderResponse)
                 .orElseThrow(() -> new OrderNotFoundException("The order with ID " + id + "not found"));
     }
+
 }

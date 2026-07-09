@@ -2,6 +2,7 @@ package com.bookshop.catalog.event;
 
 import com.bookshop.catalog.web.BookResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.cache.Cache;
@@ -43,21 +44,7 @@ public class BookEventConsumers {
 
     private void updateVectorIndex(BookResponse bookResponse) {
         try {
-            // A. Generate a Stable UUID from the ISBN
-            // This ensures that "ISBN-123" ALWAYS equals UUID "abc-123..."
-            // allowing us to overwrite the old vector when the book updates.
-            String stableId = UUID.nameUUIDFromBytes(bookResponse.isbn().getBytes()).toString();
-
-            // B. Construct the Context
-            String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
-                    bookResponse.title(), bookResponse.author(), bookResponse.publisher(), bookResponse.price());
-            // C. Metadata (Store ISBN for reverse lookup)
-            Map<String, Object> map = Map.of(
-                    "isbn", bookResponse.isbn(),
-                    "price", bookResponse.price()
-            );
-            // D. Create Document with the STABLE ID
-            Document document = new Document(stableId, content, map);
+            Document document = generateDocument(bookResponse);
 
             // Add the documents to PGVector (Spring AI removes the old ID and inserts the new one)
             vectorStore.add(List.of(document));
@@ -65,6 +52,24 @@ public class BookEventConsumers {
         } catch (Exception e) {
             log.error("Failed to add book with ISBN: {} to vector index. Error: {}", bookResponse.isbn(), e.getMessage(), e);
         }
+    }
+
+    private static @NonNull Document generateDocument(BookResponse bookResponse) {
+        // A. Generate a Stable UUID from the ISBN
+        // This ensures that "ISBN-123" ALWAYS equals UUID "abc-123..."
+        // allowing us to overwrite the old vector when the book updates.
+        String stableId = UUID.nameUUIDFromBytes(bookResponse.isbn().getBytes()).toString();
+        log.info("Generated stable ID: {}", stableId);
+        // B. Construct the Context
+        String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
+                bookResponse.title(), bookResponse.author(), bookResponse.publisher(), bookResponse.price());
+        // C. Metadata (Store ISBN for reverse lookup)
+        Map<String, Object> map = Map.of(
+                "isbn", bookResponse.isbn(),
+                "price", bookResponse.price()
+        );
+        // D. Create Document with the STABLE ID
+        return new Document(stableId, content, map);
     }
 
     private void updateCache(BookResponse bookResponse) {

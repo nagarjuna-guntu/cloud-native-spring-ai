@@ -1,5 +1,6 @@
 package com.bookshop.order.config;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.boot.restclient.RestClientCustomizer;
@@ -14,12 +15,13 @@ import java.time.Duration;
 
 
 @Configuration
+@EnableConfigurationProperties(ServiceClientProperties.class)
 public class BookClientConfig {
 
     @Bean
     public RestClient catalogRestClient(RestClient.Builder builder, ServiceClientProperties props) {
         return builder
-                .baseUrl(props.catalog().baseUrl())
+                .baseUrl(props.catalogServiceUrl())
                 .build();
     }
 
@@ -31,9 +33,7 @@ public class BookClientConfig {
                     .withReadTimeout(Duration.ofSeconds(3));
             restClientBuilder
                     .requestFactory(ClientHttpRequestFactoryBuilder.detect().build(settings))
-                    .requestInterceptor((request, body, execution) -> {
-                        return execution.execute(request, body);
-                    });
+                    .requestInterceptor((request, body, execution) -> execution.execute(request, body));
         };
 
     }

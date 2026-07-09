@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,6 +27,12 @@ public class BookController {
     public Iterable<BookResponse> viewAll() {
         log.info("Fetching the list of books from catalog..");
         return bookService.viewBooks();
+    }
+
+    @GetMapping("/search")
+    public List<BookResponse> search(@RequestParam(name = "query") String query) {
+        log.info("Fetching the list of books from catalog by search query {}", query);
+        return bookService.search(query);
     }
 
     @GetMapping("{ISBN}")

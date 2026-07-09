@@ -5,6 +5,15 @@ spring:
 server:
   port: 4002
 
+spring.ai:
+  mcp.server:
+    name: order-mcp-server
+    version: 1.0.0
+    protocol: STATELESS # no session state maintained with mcp clients, each request is independent, suited for stateless services
+    type: sync
+    annotation-scanner:
+      enabled: true
+
 spring.datasource:
   username: user
   password: secret

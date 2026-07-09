@@ -5,6 +5,7 @@ import com.bookshop.catalog.domain.Book;
 import com.bookshop.catalog.domain.BookRepository;
 import com.bookshop.catalog.domain.Publisher;
 import com.bookshop.catalog.web.BookMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 public class BookDataLoader {
     private final BookRepository bookRepository;
     private final CacheManager cacheManager;
@@ -80,13 +82,16 @@ public class BookDataLoader {
     }
 
     private void preloadVectorStore(List<Book> savedBooks) {
+        log.info("Preloading vector store with books count {}", savedBooks.size());
         var documents = savedBooks.stream()
                 .map(this::toDocument)
                 .toList();
         vectorStore.add(documents);
+        log.info("Vector store add completed with {} documents", documents.size());
     }
 
     private Document toDocument(Book book) {
+        log.info("Converting book {}", book);
         String stableId = UUID.nameUUIDFromBytes(book.isbn().getBytes()).toString();
         String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
                 book.title(), book.author(), book.publisher(), book.price());

@@ -29,6 +29,12 @@ public class OrderController {
         return orderService.findOrderById(id);
     }
 
+    @GetMapping
+    public List<OrderResponse> getAllOrders() {
+        log.info("Fetching orders ..");
+        return orderService.findAll();
+    }
+
     @GetMapping("/status")
     public Map<OrderStatus, List<OrderResponse>> getOrdersByStatus() {
         return orderService.findOrdersByStatus();

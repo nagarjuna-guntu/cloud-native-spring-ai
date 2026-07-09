@@ -8,7 +8,7 @@ server:
 spring.cloud.gateway.server.webflux:
   httpclient:
     connect-timeout: 2000
-    response-timeout: 5s
+    response-timeout: 5m
   routes:
     - id: catalog-route
       uri: ${BOOK_CATALOG_SERVICE_URL:http://localhost:4001}/books
@@ -19,7 +19,7 @@ spring.cloud.gateway.server.webflux:
       predicates:
         - Path=/orders/**
     - id: agent-route
-      uri: ${BOOK_AGENT_SERVICE_URL:http://localhost:4004}/agent/chat
+      uri: ${BOOK_AGENT_SERVICE_URL:http://localhost:4004}
       predicates:
         - Path=/agent/**
 

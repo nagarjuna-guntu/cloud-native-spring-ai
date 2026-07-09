@@ -4,26 +4,33 @@ package com.bookshop.catalog.domain;
 import com.bookshop.catalog.event.BookEventPublisher;
 import com.bookshop.catalog.event.BookEventType;
 import com.bookshop.catalog.web.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.document.Document;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.MapBindingResult;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class BookService {
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
     private final BookEventPublisher bookEventPublisher;
     private final BookValidator bookValidator;
+    private final BookSearchService bookSearchService;
 
-    public BookService(BookRepository bookRepository, BookMapper bookMapper, BookEventPublisher bookEventPublisher, BookValidator bookValidator) {
+
+    public BookService(BookRepository bookRepository, BookMapper bookMapper, BookEventPublisher bookEventPublisher, BookValidator bookValidator, BookSearchService bookSearchService) {
         this.bookRepository = bookRepository;
         this.bookMapper = bookMapper;
         this.bookEventPublisher = bookEventPublisher;
         this.bookValidator = bookValidator;
+        this.bookSearchService = bookSearchService;
     }
 
     @Cacheable(cacheNames = "books", key = "'ALL'")
@@ -94,8 +101,26 @@ public class BookService {
     }
 
     public List<BookResponse> getBooksByIsbns(List<String> isbns) {
+        log.info("getBooksByIsbns({})", isbns);
         return bookRepository.findAllByIsbnIn(isbns).stream()
                 .map(bookMapper::toBookResponse)
                 .toList();
+    }
+
+    public List<BookResponse> search(String query) {
+
+        log.info("search({})", query);
+        List<Document> documents = bookSearchService.searchVectorstore(query);
+        log.info("documents count from vectorStore - {} ", documents.size());
+        if (documents.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<String> isbns = documents.stream()
+                .map(doc -> (String) doc.getMetadata().get("isbn"))
+                .toList();
+        log.info("isbn metadata from vectorStore - [{}] ", isbns);
+
+        return getBooksByIsbns(isbns);
+
     }
 }

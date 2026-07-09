@@ -77,7 +77,7 @@ spring.ai:
   mcp.server:
     name: catalog-mcp-server
     version: 1.0.0
-    protocol: STREAMABLE
+    protocol: STATELESS # no session state maintained with mcp clients, each request is independent, suited for stateless services
     type: sync
     annotation-scanner:
       enabled: true
@@ -111,3 +111,7 @@ management.otlp:
   metrics:
     export:
       url: http://localhost:4318/v1/metrics
+
+logging.level:
+  org.springframework.ai: DEBUG
+  org.springframework.jdbc: DEBUG

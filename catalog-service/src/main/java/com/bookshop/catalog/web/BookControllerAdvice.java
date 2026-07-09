@@ -1,8 +1,9 @@
 package com.bookshop.catalog.web;
 
-import com.bookshop.bookcatalogservice.domain.BookAlreadyExistsException;
-import com.bookshop.bookcatalogservice.domain.BookNotFoundException;
-import com.bookshop.bookcatalogservice.domain.MapFieldValidationException;
+
+import com.bookshop.catalog.domain.BookAlreadyExistsException;
+import com.bookshop.catalog.domain.BookNotFoundException;
+import com.bookshop.catalog.domain.MapFieldValidationException;
 import jakarta.validation.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;

@@ -8,7 +8,7 @@ server:
 spring.ai:
   ollama:
     base-url: http://localhost:11434
-    chat.options.model: llama3.2
+    chat.options.model: mistral:7b
     embedding.options.model: nomic-embed-text-v2-moe
     init.pull-model-strategy: when_missing
   mcp.client:
@@ -29,3 +29,21 @@ spring.ai:
 logging.level:
   org.springframework.ai: DEBUG
   com.bookshop.agent: DEBUG
+
+#OBSERVABILITY
+management.tracing.sampling.probability: 1.0
+
+management.opentelemetry:
+  logging:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/logs
+  tracing:
+    export:
+      otlp:
+        endpoint: http://localhost:4318/v1/traces
+
+management.otlp:
+  metrics:
+    export:
+      url: http://localhost:4318/v1/metrics
