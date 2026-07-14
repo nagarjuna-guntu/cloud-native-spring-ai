@@ -26,8 +26,6 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springframework.ai:spring-ai-starter-mcp-client'
 	implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
-	implementation 'org.springframework.ai:spring-ai-tool-search-advisor'
-	implementation 'org.springframework.ai:spring-ai-tool-search-tool'
 	implementation "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$OpenTelemetryVersion"
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

@@ -8,7 +8,7 @@ server:
 spring.ai:
   ollama:
     base-url: http://localhost:11434
-    chat.options.model: mistral:7b
+    chat.options.model: llama3.1:8b #mistral:7b
     embedding.options.model: nomic-embed-text-v2-moe
     init.pull-model-strategy: when_missing
   mcp.client:

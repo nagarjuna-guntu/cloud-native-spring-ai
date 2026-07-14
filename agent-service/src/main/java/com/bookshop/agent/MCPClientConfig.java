@@ -3,19 +3,13 @@ package com.bookshop.agent;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
-import org.springframework.ai.chat.client.advisor.StructuredOutputValidationAdvisor;
-import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
+
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.toolsearch.ToolIndex;
-import org.springframework.ai.tool.toolsearch.index.regex.RegexToolIndex;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.Arrays;
 
 @Configuration
 public class MCPClientConfig {
@@ -28,19 +22,14 @@ public class MCPClientConfig {
    
             """;
 
-    @Bean
-    ChatClient chatClient(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory, SyncMcpToolCallbackProvider mcpTools) {
 
-        var toolSearchAdvisor  = ToolSearchToolCallingAdvisor.builder()
-                .toolIndex(new RegexToolIndex())
-                .build();
+    @Bean
+    ChatClient chatClient(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory) {
 
         return chatClientBuilder
                 .defaultSystem(SYSTEM_PROMPT)
-                .defaultTools(mcpTools)
                 .defaultAdvisors(
                         messageChatMemoryAdvisor(chatMemory),
-                        toolSearchAdvisor,
                         SimpleLoggerAdvisor.builder().build()
                 )
                 .build();

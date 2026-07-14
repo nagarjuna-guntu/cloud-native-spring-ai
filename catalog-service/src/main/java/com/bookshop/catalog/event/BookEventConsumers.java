@@ -4,17 +4,18 @@ import com.bookshop.catalog.web.BookResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 @Configuration
 @Slf4j
@@ -45,10 +46,8 @@ public class BookEventConsumers {
     private void updateVectorIndex(BookResponse bookResponse) {
         try {
             Document document = generateDocument(bookResponse);
-
-            // Add the documents to PGVector (Spring AI removes the old ID and inserts the new one)
             vectorStore.add(List.of(document));
-            log.info("Book with ISBN: {} added to vector index successfully.", bookResponse.isbn());
+            log.info("Book with ISBN: {} written to vector index successfully.", bookResponse.isbn());
         } catch (Exception e) {
             log.error("Failed to add book with ISBN: {} to vector index. Error: {}", bookResponse.isbn(), e.getMessage(), e);
         }
@@ -59,17 +58,20 @@ public class BookEventConsumers {
         // This ensures that "ISBN-123" ALWAYS equals UUID "abc-123..."
         // allowing us to overwrite the old vector when the book updates.
         String stableId = UUID.nameUUIDFromBytes(bookResponse.isbn().getBytes()).toString();
-        log.info("Generated stable ID: {}", stableId);
+        log.info("Generated stable ID for the document: {}", stableId);
         // B. Construct the Context
         String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
                 bookResponse.title(), bookResponse.author(), bookResponse.publisher(), bookResponse.price());
         // C. Metadata (Store ISBN for reverse lookup)
-        Map<String, Object> map = Map.of(
+        Map<String, Object> metadata = Map.of(
                 "isbn", bookResponse.isbn(),
-                "price", bookResponse.price()
+                "price", bookResponse.price(),
+                "title", bookResponse.title().toLowerCase(),
+                "author", bookResponse.author().toLowerCase(),
+                "publisher", bookResponse.publisher().toLowerCase()
         );
         // D. Create Document with the STABLE ID
-        return new Document(stableId, content, map);
+        return new Document(stableId, content, metadata);
     }
 
     private void updateCache(BookResponse bookResponse) {

@@ -117,6 +117,7 @@ public class BookService {
         }
         List<String> isbns = documents.stream()
                 .map(doc -> (String) doc.getMetadata().get("isbn"))
+                .distinct()
                 .toList();
         log.info("isbn metadata from vectorStore - [{}] ", isbns);
 

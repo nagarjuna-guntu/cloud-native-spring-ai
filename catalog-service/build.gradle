@@ -64,8 +64,9 @@ dependencyManagement {
 	}
 }
 
+
 tasks.withType(JavaCompile).configureEach {
-	options.compilerArgs += ['--enable-preview']
+	options.compilerArgs += ['--enable-preview', '-parameters']
 }
 
 tasks.withType(Test).configureEach {

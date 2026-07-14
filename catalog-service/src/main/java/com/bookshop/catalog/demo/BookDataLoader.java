@@ -7,6 +7,7 @@ import com.bookshop.catalog.domain.Publisher;
 import com.bookshop.catalog.web.BookMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.cache.Cache;
@@ -17,9 +18,11 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class BookDataLoader {
+
     private final BookRepository bookRepository;
     private final CacheManager cacheManager;
     private final BookMapper bookMapper;
@@ -86,6 +89,8 @@ public class BookDataLoader {
         var documents = savedBooks.stream()
                 .map(this::toDocument)
                 .toList();
+
+        // Spring AI automatically duplicates your metadata map onto every split chunk.
         vectorStore.add(documents);
         log.info("Vector store add completed with {} documents", documents.size());
     }
@@ -98,7 +103,10 @@ public class BookDataLoader {
 
         Map<String, Object> metadata = Map.of(
                 "isbn", book.isbn(),
-                "price", book.price()
+                "price", book.price(),
+                "title", book.title().toLowerCase(),
+                "author", book.author().toLowerCase(),
+                "publisher", book.publisher().toLowerCase()
         );
 
         return new Document(stableId, content, metadata);

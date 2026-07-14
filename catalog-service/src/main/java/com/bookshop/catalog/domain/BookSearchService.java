@@ -19,10 +19,11 @@ public class BookSearchService {
 
     public List<Document> searchVectorstore(String query) {
         log.info("searchVectorstore({})", query);
+        var normalizeQuery = query.trim().toLowerCase();
         SearchRequest searchRequest = SearchRequest.builder()
-                .query(query)
-                .similarityThreshold(0.7)
-                .topK(1)
+                .query(normalizeQuery)
+                .topK(5)
+                .similarityThreshold(0.3)
                 .build();
         return vectorStore.similaritySearch(searchRequest);
     }

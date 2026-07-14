@@ -1,39 +1,38 @@
 package com.bookshop.order.tools;
 
 import com.bookshop.order.order.domain.OrderService;
+import com.bookshop.order.order.web.OrderRequest;
 import com.bookshop.order.order.web.OrderResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class OrderMcpTools {
 
     private final OrderService orderService;
+
 
     public OrderMcpTools(OrderService orderService) {
         this.orderService = orderService;
     }
 
     @McpTool(name = "placeOrder", description = """
-            Place an order for a book.
-            The ISBN must be a valid book ISBN.
-            If quantity is omitted use 1.
+            CRITICAL: You MUST call this tool to execute any book purchase or order placement.
+            NEVER simulate, imagine, or invent an order response using your internal knowledge.
+            You cannot verify price, inventory, or order status without executing this tool.
             
-            Interpret the response as follows:
+            Inputs:
+            - isbn: A valid string representation of the book's ISBN.
+            - quantity: The number of items to order (between 1 and 5). If omitted, default to 1.
             
-            - status=ACCEPTED means the order was successfully created.
-            - status=REJECTED means the order could not be created.
-            - reason explains why the order failed.
-            - orderTotal is the final price for the requested quantity.
-            - createdDate is when the order was created.
-            
-            Use this information to produce a friendly response.
-            Do not invent additional details.
+            Interpret the returned JSON payload from the system directly to the user.
             """)
-    public OrderResponse placeOrder(@McpToolParam (description = "The Book ISBN") String isbn,
-                                    @McpToolParam(description = "The number of items to order (between 1 and 5)") int quantity) {
-        return orderService.submitOrder(isbn, quantity);
+    public OrderResponse placeOrder(OrderRequest orderRequest) {
+        log.info("Agent invoked tool with flat properties mapped to object -> ISBN: {}, Qty: {}", orderRequest.isbn(), orderRequest.quantity());
+        return orderService.submitOrder(orderRequest.isbn(), orderRequest.quantity());
     }
 }
