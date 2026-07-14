@@ -106,13 +106,14 @@ public class BookAgentService {
         log.info("Order Tool raw output received: {}", placeOrderResponse);
 
         // STEP 2: Safe structural mapping phase
+        String isolatedMappingId = "transform-" + java.util.UUID.randomUUID().toString();
         return chatClient.prompt()
                 .user(userSpec -> userSpec
                         .text("Transform the following text receipt into the required structure: {data}")
                         .param("data", placeOrderResponse)
                 )
                 .advisors(advisorSpec -> advisorSpec
-                        .param(ChatMemory.CONVERSATION_ID, chatId)
+                        .param(ChatMemory.CONVERSATION_ID, isolatedMappingId)
                 )
                 .advisors(validationAdvisor)
                 .call()
@@ -155,20 +156,23 @@ public class BookAgentService {
             return new AgentSearchResponse("No data found.", List.of());
         }
 
+        String isolatedMappingId = "transform-" + java.util.UUID.randomUUID().toString();
         return chatClient.prompt()
                 .user(userSpec -> userSpec
                         .text("""
-                                Transform the following factual search details directly into the schema.
-                                If the data contains a refusal or says no books exist, output 'No data found.'
-                                books: [] as the response.
-                    
-                                Data to map: {data}
+                                You are a strict data transformation utility. Your ONLY task is to map the factual data inside the data block below into JSON matching the schema.
+                                
+                                CRITICAL RULE:
+                                - If the text explicitly reads "No books found" or says an error occurred, output "No data found." and an empty array.
+                                - Otherwise, extract the values from the array exactly as written. Never invent data or simulate errors.
+                                Data to transform:
+                                 {data}
                                 """
                         )
                         .param("data", searchBookResult)
                 )
                 .advisors(advisorSpec -> advisorSpec
-                        .param(ChatMemory.CONVERSATION_ID, chatId)
+                        .param(ChatMemory.CONVERSATION_ID, isolatedMappingId)
                 )
                 .advisors(validationAdvisor)
                 .call()
