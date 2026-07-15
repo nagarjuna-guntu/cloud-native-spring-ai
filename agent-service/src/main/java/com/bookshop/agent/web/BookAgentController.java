@@ -1,5 +1,6 @@
-package com.bookshop.agent;
+package com.bookshop.agent.web;
 
+import com.bookshop.agent.domain.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,5 +27,12 @@ public class BookAgentController {
                                          @RequestBody AgentOrderRequest request) {
         log.info("Place Order X_AI_CHAT_ID = {}", chatId);
         return bookAgentService.placeOrder(request, chatId);
+    }
+
+    @GetMapping("/order/{orderId}")
+    public AgentOrderResponse findOrder(@RequestHeader(name = "X_AI_CHAT_ID", defaultValue = "default") String chatId,
+                                        @PathVariable(name = "orderId") Long orderId) {
+        log.info("Find Order X_AI_CHAT_ID = {}, Order ID = {}", chatId, orderId);
+        return bookAgentService.findOrder(orderId, chatId);
     }
 }

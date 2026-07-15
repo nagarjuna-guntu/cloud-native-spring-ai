@@ -35,4 +35,14 @@ public class OrderMcpTools {
         log.info("Agent invoked tool with flat properties mapped to object -> ISBN: {}, Qty: {}", orderRequest.isbn(), orderRequest.quantity());
         return orderService.submitOrder(orderRequest.isbn(), orderRequest.quantity());
     }
+
+    @McpTool(name = "findOrder", description = """
+            Find an order by its ID.
+            Inputs:
+            - orderId: The ID of the order to find.
+            """)
+    public OrderResponse findOrder(@McpToolParam(description = "The ID of the order to find", required = true) Long orderId) {
+        log.info("Agent invoked tool to find order with ID: {}", orderId);
+        return orderService.findOrderById(orderId);
+    }
 }

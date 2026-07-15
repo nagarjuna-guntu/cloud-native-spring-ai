@@ -1,4 +1,4 @@
-package com.bookshop.agent;
+package com.bookshop.agent.domain;
 
 import java.util.List;
 

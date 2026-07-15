@@ -1,4 +1,4 @@
-package com.bookshop.agent;
+package com.bookshop.agent.config;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;

@@ -58,6 +58,10 @@ dependencyManagement {
 	}
 }
 
+tasks.withType(JavaCompile).configureEach {
+	options.compilerArgs += ['-parameters']
+}
+
 tasks.named('bootBuildImage') {
 	imageName = "${project.name}"
 	environment = [

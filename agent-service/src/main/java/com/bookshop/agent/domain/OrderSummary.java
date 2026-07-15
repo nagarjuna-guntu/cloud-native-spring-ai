@@ -1,9 +1,9 @@
-package com.bookshop.agent;
+package com.bookshop.agent.domain;
 
 import java.time.Instant;
 
 public record OrderSummary(
-        String bookIsbn, String bookTitle, double bookPrice,
+        Long orderId, String bookIsbn, String bookTitle, double bookPrice,
         String bookAuthor, String bookPublisher, int quantity,
         double orderTotal, String orderStatus, Instant createdDate,
         String rejectReason
