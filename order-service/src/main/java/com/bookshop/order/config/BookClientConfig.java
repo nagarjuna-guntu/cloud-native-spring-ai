@@ -19,23 +19,28 @@ import java.time.Duration;
 public class BookClientConfig {
 
     @Bean
-    public RestClient catalogRestClient(RestClient.Builder builder, ServiceClientProperties props) {
+    public RestClient catalogRestClient(RestClient.Builder builder,
+                                        ServiceClientProperties props) {
         return builder
                 .baseUrl(props.catalogServiceUrl())
                 .build();
     }
 
+    // spring.http.clients
+    // connect-timeout: 2s
+    // read-timeout: 3s #using these properties we can also configure the timeouts
     @Bean
-    public RestClientCustomizer  restClientCustomizer() {
-        return restClientBuilder -> {
-            HttpClientSettings settings = HttpClientSettings.defaults()
+    public RestClientCustomizer restClientCustomizer() {
+        return builder -> {
+            var settings = HttpClientSettings.defaults()
                     .withConnectTimeout(Duration.ofSeconds(2))
                     .withReadTimeout(Duration.ofSeconds(3));
-            restClientBuilder
-                    .requestFactory(ClientHttpRequestFactoryBuilder.detect().build(settings))
-                    .requestInterceptor((request, body, execution) -> execution.execute(request, body));
-        };
 
+            builder.requestFactory(ClientHttpRequestFactoryBuilder.detect()
+                            .build(settings))
+                    .requestInterceptor((request, body,
+                                         execution) -> execution.execute(request, body));
+        };
     }
 
     @Bean
@@ -51,6 +56,5 @@ public class BookClientConfig {
                 .maxDelay(Duration.ofMillis(500))
                 .build();
         return new RetryTemplate(retryPolicy);
-
     }
 }

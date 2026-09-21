@@ -1,7 +1,6 @@
 package com.bookshop.order.order.web;
 
 
-
 import com.bookshop.order.order.domain.OrderStatus;
 
 import java.time.Instant;
@@ -11,7 +10,7 @@ public record OrderResponse(
         String bookIsbn,
         String bookName,
         Double orderTotal,
-        int quantity,
+        Integer quantity,
         OrderStatus status,
         Instant createdDate,
         String createdBy,

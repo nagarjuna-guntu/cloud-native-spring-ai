@@ -19,7 +19,8 @@ import java.util.List;
 public class RedisTemplateConfig {
 
     @Bean
-    public ReactiveRedisTemplate<String, List<Book>> booksRedisTemplate(ReactiveRedisConnectionFactory connectionFactory, RedisSerializer<List<Book>> redisBooksValueSerializer) {
+    public ReactiveRedisTemplate<String, List<Book>> booksRedisTemplate(ReactiveRedisConnectionFactory connectionFactory,
+                                                                        RedisSerializer<List<Book>> redisBooksValueSerializer) {
         RedisSerializationContext<String, List<Book>> serializationContext = RedisSerializationContext
                 .<String, List<Book>>newSerializationContext(new StringRedisSerializer())
                 .value(redisBooksValueSerializer)
@@ -29,7 +30,8 @@ public class RedisTemplateConfig {
     }
 
     @Bean
-    public ReactiveRedisTemplate<String, Book> booksByIsbnRedisTemplate(ReactiveRedisConnectionFactory connectionFactory, RedisSerializer<Book> redisBookByIsbnValueSerializer) {
+    public ReactiveRedisTemplate<String, Book> booksByIsbnRedisTemplate(ReactiveRedisConnectionFactory connectionFactory,
+                                                                        RedisSerializer<Book> redisBookByIsbnValueSerializer) {
         RedisSerializationContext<String, Book> serializationContext = RedisSerializationContext
                 .<String, Book>newSerializationContext(new StringRedisSerializer())
                 .value(redisBookByIsbnValueSerializer)
@@ -37,7 +39,6 @@ public class RedisTemplateConfig {
                 .build();
         return new ReactiveRedisTemplate<>(connectionFactory, serializationContext);
     }
-
 
     @Bean
     public RedisSerializer<List<Book>> redisBooksValueSerializer() {

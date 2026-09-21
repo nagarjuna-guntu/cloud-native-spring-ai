@@ -1,40 +1,31 @@
 package com.bookshop.catalog.demo;
 
 
-import com.bookshop.catalog.domain.Book;
-import com.bookshop.catalog.domain.BookRepository;
-import com.bookshop.catalog.domain.Publisher;
+import com.bookshop.catalog.domain.*;
 import com.bookshop.catalog.web.BookMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.IntStream;
+
 
 @Slf4j
 public class BookDataLoader {
 
     private final BookRepository bookRepository;
-    private final CacheManager cacheManager;
+    private final CacheManagerService cacheManagerService;
     private final BookMapper bookMapper;
-    private final VectorStore vectorStore;
+    private final VectorStoreService vectorStoreService;
     private final JdbcClient jdbcClient;
 
-    public BookDataLoader(BookRepository bookRepository, CacheManager cacheManager, BookMapper bookMapper,
-                          VectorStore vectorStore, JdbcClient jdbcClient) {
+    public BookDataLoader(BookRepository bookRepository, CacheManagerService cacheManagerService, BookMapper bookMapper,
+                          VectorStoreService vectorStoreService, JdbcClient jdbcClient) {
         this.bookRepository = bookRepository;
-        this.cacheManager = cacheManager;
+        this.cacheManagerService = cacheManagerService;
         this.bookMapper = bookMapper;
-        this.vectorStore = vectorStore;
+        this.vectorStoreService = vectorStoreService;
         this.jdbcClient = jdbcClient;
     }
 
@@ -87,43 +78,17 @@ public class BookDataLoader {
     private void preloadVectorStore(List<Book> savedBooks) {
         log.info("Preloading vector store with books count {}", savedBooks.size());
         var documents = savedBooks.stream()
-                .map(this::toDocument)
-                .toList();
-
-        // Spring AI automatically duplicates your metadata map onto every split chunk.
-        vectorStore.add(documents);
-        log.info("Vector store add completed with {} documents", documents.size());
-    }
-
-    private Document toDocument(Book book) {
-        log.info("Converting book {}", book);
-        String stableId = UUID.nameUUIDFromBytes(book.isbn().getBytes()).toString();
-        String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
-                book.title(), book.author(), book.publisher(), book.price());
-
-        Map<String, Object> metadata = Map.of(
-                "isbn", book.isbn(),
-                "price", book.price(),
-                "title", book.title().toLowerCase(),
-                "author", book.author().toLowerCase(),
-                "publisher", book.publisher().toLowerCase()
-        );
-
-        return new Document(stableId, content, metadata);
-    }
-
-    private void preloadBookCaches(List<Book> books) {
-        var bookResponses = books.stream()
                 .map(bookMapper::toBookResponse)
                 .toList();
-        Cache byIsbnCache = cacheManager.getCache("booksByIsbn");
-        Cache allBooksCache = cacheManager.getCache("books");
+        vectorStoreService.vectorStoreAdd(documents);
+    }
 
-        if (byIsbnCache == null || allBooksCache == null) {
-            return;
-        }
-
-        bookResponses.forEach(book -> byIsbnCache.put(book.isbn(), book));
-        allBooksCache.put("ALL", bookResponses);
+    private void preloadBookCaches(List<Book> savedBooks) {
+        log.info("Preloading book caches with books count {}", savedBooks.size());
+        var bookResponses = savedBooks.stream()
+                .map(bookMapper::toBookResponse)
+                .toList();
+        bookResponses.forEach(cacheManagerService::cacheAdd);
+        cacheManagerService.cacheAll(bookResponses);
     }
 }

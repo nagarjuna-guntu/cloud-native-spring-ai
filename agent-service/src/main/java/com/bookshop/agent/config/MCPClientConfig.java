@@ -1,6 +1,7 @@
 package com.bookshop.agent.config;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 
@@ -14,24 +15,25 @@ import org.springframework.context.annotation.Configuration;
 public class MCPClientConfig {
 
     private static final String SYSTEM_PROMPT = """
-            You are a book-ordering assistant.
-            IMPORTANT:
-            For search book should call searchBook tool,
-            for order book should call placeOrder tool.
-   
+            You are a bookshop assistant.
+            
+            Use the available tools when required.
+            Never invent book or order information.
+            When a tool is required, use the appropriate tool.
+            Base factual responses on tool results.
             """;
 
+    @Bean
+    ChatClient chatClient(ChatClient.Builder chatClientBuilder) {
+        return chatClientBuilder.build();
+    }
 
     @Bean
-    ChatClient chatClient(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory) {
-
-        return chatClientBuilder
+    ChatClientBuilderCustomizer addAdvisors(MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
+        return builder -> builder
                 .defaultSystem(SYSTEM_PROMPT)
                 .defaultAdvisors(
-                        messageChatMemoryAdvisor(chatMemory),
-                        SimpleLoggerAdvisor.builder().build()
-                )
-                .build();
+                        SimpleLoggerAdvisor.builder().build());
     }
 
     @Bean

@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 
 @RestController
@@ -21,7 +20,6 @@ public class OrderController {
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
-
 
     @GetMapping("{id}")
     public OrderResponse getOrderById(@PathVariable Long id) {
@@ -44,6 +42,5 @@ public class OrderController {
     public OrderResponse createOrder(@RequestBody @Valid OrderRequest orderRequest) {
         log.info("Create order with request {}..", orderRequest);
         return orderService.submitOrder(orderRequest.isbn(), orderRequest.quantity());
-
     }
 }

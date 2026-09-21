@@ -14,19 +14,17 @@ public class OrderSummaryService {
         this.bookService = bookService;
     }
 
-
     public Mono<OrderSummary> viewOrderSummary(Long id) {
         return orderService.findOrderById(id)
                 .flatMap(order -> bookService.findBookByIsbn(order.bookIsbn())
                         .map(book -> OrderSummary.of(book, order)));
-
     }
 
     public Flux<OrderSummary> viewAllOrderSummariesByUser() {
         return orderService.getAllOrdersByUser()
                 .flatMap(order ->
-                        bookService.findBookByIsbn(order.bookIsbn())
-                                .map(book -> OrderSummary.of(book, order)),
+                                bookService.findBookByIsbn(order.bookIsbn())
+                                        .map(book -> OrderSummary.of(book, order)),
                         5 // Limit to 5 concurrent book lookups per user request
                 );
     }

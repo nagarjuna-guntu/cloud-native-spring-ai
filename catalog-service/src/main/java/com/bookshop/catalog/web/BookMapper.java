@@ -25,7 +25,7 @@ public class BookMapper {
      * UPDATE
      * Merge request into existing entity (preserve id, version, audit fields)
      */
-    public Book toUpdatedEntity(Book existing, UpdateBookRequest request) {
+    public Book toEntity(Book existing, UpdateBookRequest request) {
         return existing.toBuilder()
                 .title(request.title())
                 .author(request.author())
@@ -47,7 +47,6 @@ public class BookMapper {
                 entity.publisher()
         );
     }
-
 
 
 }

@@ -5,12 +5,18 @@ spring:
 server:
   port: 4004
 
+spring.jackson:
+  deserialization:
+    fail-on-null-for-primitives: false
+
 spring.ai:
   ollama:
     base-url: http://localhost:11434
-    chat.options.model: llama3.1:8b #mistral:7b
+    chat.options.model: llama3.2 #qcwind/qwen3-8b-instruct-Q4-K-M:latest  #
     embedding.options.model: nomic-embed-text-v2-moe
     init.pull-model-strategy: when_missing
+  tools:
+    throw-exception-on-error: true
   mcp.client:
     name: book-shop-agent
     version: 1.0.0

@@ -23,13 +23,12 @@ public class BookService {
         this.redisTemplate = redisTemplate;
     }
 
-
     public Mono<Book> findBookByIsbn(String isbn) {
         return bookServiceClient.findBookByIsbn(isbn);
     }
 
     //The Cache Key:: book-catalog::booksByIsbn::
-    public Mono<Book> getCachedBook(String isbn, Throwable  ex) {
+    public Mono<Book> getCachedBook(String isbn, Throwable ex) {
         var message = Objects.requireNonNullElse(ex.getCause().getMessage(), ex.getMessage());
         log.error("Fallback for the getBook method with the cause {} ", message);
         var cacheKeyBooksByIsbn = CachedKeys.bookByIsbn(isbn);

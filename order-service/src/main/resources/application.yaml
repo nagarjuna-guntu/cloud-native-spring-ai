@@ -5,12 +5,17 @@ spring:
 server:
   port: 4002
 
+spring.jackson:
+  deserialization:
+    fail-on-null-for-primitives: false
+
 spring.ai:
   mcp.server:
     name: order-mcp-server
     version: 1.0.0
     protocol: STATELESS # no session state maintained with mcp clients, each request is independent, suited for stateless services
     type: sync
+    instructions: "This stateless server provides you with the ability to manage orders"
     annotation-scanner:
       enabled: true
 

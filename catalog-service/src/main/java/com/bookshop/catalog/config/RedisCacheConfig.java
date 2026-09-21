@@ -22,7 +22,9 @@ import java.util.List;
 public class RedisCacheConfig {
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory, RedisSerializer<List<BookResponse>> redisBooksValueSerializer, RedisSerializer<BookResponse> redisBookByIsbnValueSerializer) {
+    public RedisCacheManager cacheManager(RedisConnectionFactory redisConnectionFactory,
+                                          RedisSerializer<List<BookResponse>> redisAllBooksValueSerializer,
+                                          RedisSerializer<BookResponse> redisBookByIsbnValueSerializer) {
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
                 .prefixCacheNameWith("book-catalog::")
@@ -32,19 +34,19 @@ public class RedisCacheConfig {
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisBookByIsbnValueSerializer))
                 .entryTtl(Duration.ofMinutes(20));
 
-        RedisCacheConfiguration booksConfig = defaultConfig
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisBooksValueSerializer))
+        RedisCacheConfiguration allBooksConfig = defaultConfig
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(redisAllBooksValueSerializer))
                 .entryTtl(Duration.ofHours(12));
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)
-                .withCacheConfiguration("books", booksConfig)
+                .withCacheConfiguration("books", allBooksConfig)
                 .withCacheConfiguration("booksByIsbn", booksByIsbnConfig)
                 .build();
     }
 
     @Bean
-    public RedisSerializer<List<BookResponse>> redisBooksValueSerializer() {
+    public RedisSerializer<List<BookResponse>> redisAllBooksValueSerializer() {
         var jsonMapper = JsonMapper.builder()
                 .findAndAddModules()
                 .build();

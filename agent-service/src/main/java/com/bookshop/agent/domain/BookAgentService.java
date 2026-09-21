@@ -1,210 +1,156 @@
 package com.bookshop.agent.domain;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.StructuredOutputValidationAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import com.bookshop.agent.config.AgentMcpTools;
+import com.bookshop.agent.config.AgentPromptTemplates;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 public class BookAgentService {
 
     private final ChatClient chatClient;
-    private final SyncMcpToolCallbackProvider mcpTools;
-    private final Resource placeOrderSystemPrompt;
-    private final Resource searchBookSystemPrompt;
-    private final Resource placeOrderUserPrompt;
-    private final Resource searchBookUserPrompt;
+    private final AgentMcpTools mcpTools;
+    private final MessageChatMemoryAdvisor chatMemoryAdvisor;
+    private final AgentPromptTemplates promptTemplates;
+    private final JsonMapper jsonMapper;
 
-    public BookAgentService(ChatClient chatClient, SyncMcpToolCallbackProvider mcpTools,
-                            @Value("classpath:/promptTemplates/placeOrderSystemPrompt.st") Resource placeOrderSystemPrompt,
-                            @Value("classpath:/promptTemplates/searchBookSystemPrompt.st") Resource searchBookSystemPrompt,
-                            @Value("classpath:/promptTemplates/placeOrderUserPrompt.st") Resource placeOrderUserPrompt,
-                            @Value("classpath:/promptTemplates/searchBookUserPrompt.st") Resource searchBookUserPrompt) {
+    public BookAgentService(ChatClient chatClient,
+                            AgentMcpTools mcpTools,
+                            MessageChatMemoryAdvisor chatMemoryAdvisor,
+                            AgentPromptTemplates promptTemplates,
+                            JsonMapper jsonMapper) {
         this.chatClient = chatClient;
         this.mcpTools = mcpTools;
-        this.placeOrderSystemPrompt = placeOrderSystemPrompt;
-        this.searchBookSystemPrompt = searchBookSystemPrompt;
-        this.placeOrderUserPrompt = placeOrderUserPrompt;
-        this.searchBookUserPrompt = searchBookUserPrompt;
+        this.chatMemoryAdvisor = chatMemoryAdvisor;
+        this.promptTemplates = promptTemplates;
+        this.jsonMapper = jsonMapper;
+    }
+
+    private static String getAgentResponseText(ChatResponse chatResponse, ToolCallback toolCallback) {
+        if (chatResponse == null) {
+            throw new ToolExecutionException(toolCallback.getToolDefinition(),
+                    new RuntimeException("tool execution returns null"));
+        }
+        Generation generation = chatResponse.getResult();
+        return generation != null ? generation.getOutput().getText() : "";
+    }
+
+    private static @NonNull String getMessage(AgentOrderResult order) {
+        return switch (order.status()) {
+            case ACCEPTED -> "Order Accepted.";
+            case REJECTED -> "Order Rejected.";
+            case DISPATCHED -> "Order Dispatched.";
+            case PENDING -> "Order Pending.";
+            case CANCELED -> "Order Cancelled.";
+            case null -> throw new IllegalStateException("Unexpected value: null.");
+        };
     }
 
     public AgentOrderResponse placeOrder(AgentOrderRequest agentRequest, String chatId) {
-        var placeOrderTool = Arrays.stream(this.mcpTools.getToolCallbacks())
-                .filter(tool -> "placeOrder".equals(tool.getToolDefinition().name()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("placeOrder tool not found"));
 
-        log.info("Executing placeOrder agent workflow for chatId: {}", chatId);
+        log.info("PlaceOrder agent workflow for order request [{}] : chatId: [{}] - START", agentRequest, chatId);
 
-        var validationAdvisor = StructuredOutputValidationAdvisor
-                .builder()
-                .maxRepeatAttempts(2)
-                .outputType(AgentOrderResponse.class)
-                .build();
-
-        var placeOrderResponse = chatClient.prompt()
-                .system(placeOrderSystemPrompt)
+        var chatResponse = chatClient.prompt()
                 .user(promptUserSpec -> promptUserSpec
-                        .text(placeOrderUserPrompt)
+                        .text(promptTemplates.get("placeOrder"))
                         .param("isbn", agentRequest.isbn())
                         .param("quantity", agentRequest.quantity())
                 )
-                .advisors(advisorSpec -> advisorSpec
-                        .param(ChatMemory.CONVERSATION_ID, chatId)
-                )
-                .tools(placeOrderTool)
+                .tools(mcpTools.placeOrder())
                 .call()
-                .content();
+                .chatResponse();
 
-        log.info("Order Tool raw output received: {}", placeOrderResponse);
+        String responseText = getAgentResponseText(chatResponse, mcpTools.placeOrder());
 
-        // STEP 2: Safe structural mapping phase
-        String isolatedMappingId = "transform-" + java.util.UUID.randomUUID().toString();
-        return chatClient.prompt()
-                .user(userSpec -> userSpec
-                        .text("Transform the following text receipt into the required structure: {data}")
-                        .param("data", placeOrderResponse)
-                )
-                .advisors(advisorSpec -> advisorSpec
-                        .param(ChatMemory.CONVERSATION_ID, isolatedMappingId)
-                )
-                .advisors(validationAdvisor)
-                .call()
-                .entity(AgentOrderResponse.class, entityParamSpec -> entityParamSpec
-                        .useProviderStructuredOutput()
-                        .validateSchema());
+        log.info("PlaceOrder tool raw output text received: [{}].", responseText);
 
+        if (responseText == null || responseText.isBlank()) {
+            return new AgentOrderResponse(responseText, null);
+        }
+
+        var result = jsonMapper.readValue(responseText, AgentOrderResult.class);
+
+        var message = getMessage(result);
+        OrderSummary summary = OrderSummary.of(result);
+
+        log.info("PlaceOrder agent workflow for order request [{}] : chatId: [{}] - RETURNED", agentRequest, chatId);
+
+        return new AgentOrderResponse(message, summary);
     }
 
     public AgentSearchResponse searchBook(AgentSearchRequest request, String chatId) {
-        var searchBookTool = Arrays.stream(this.mcpTools.getToolCallbacks())
-                .filter(tool -> "searchBook".equals(tool.getToolDefinition().name()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("searchBook tool not found"));
 
-        log.info("Executing searchBook agent workflow for chatId: {}", chatId);
+        log.info("SearchBook agent workflow for search request [{}] : chatId: [{}] - START", request, chatId);
 
-        var validationAdvisor = StructuredOutputValidationAdvisor
-                .builder()
-                .maxRepeatAttempts(2)
-                .outputType(AgentSearchResponse.class)
-                .build();
-
-        String searchBookResult =  chatClient.prompt()
-                .system(searchBookSystemPrompt)
+        AgentSearchResult agentSearchResult = chatClient.prompt()
                 .user(promptUserSpec -> promptUserSpec
-                        .text(searchBookUserPrompt)
+                        .text(promptTemplates.get("searchBook"))
                         .param("keyword", request.keyword())
                 )
                 .advisors(advisorSpec -> advisorSpec
+                        .advisors(chatMemoryAdvisor)
                         .param(ChatMemory.CONVERSATION_ID, chatId)
                 )
-                .tools(searchBookTool)
+                .tools(mcpTools.searchBook())
                 .call()
-                .content();
+                .entity(AgentSearchResult.class, ChatClient.EntityParamSpec::validateSchema);
 
-        log.info("Tool execution complete. Result data: {}. Now mapping to structure...", searchBookResult);
+        String message = agentSearchResult.books().isEmpty()
+                ? "No Book(s) Found."
+                : " %d Book(s) Found.".formatted(agentSearchResult.books().size());
 
-        if (searchBookResult == null || searchBookResult.isBlank() || searchBookResult.toLowerCase().contains("no data found")) {
-            return new AgentSearchResponse("No data found.", List.of());
-        }
+        log.info("SearchBook agent workflow for search request [{}] : chatId: [{}] - RETURNED", request, chatId);
 
-        String isolatedMappingId = "transform-" + java.util.UUID.randomUUID().toString();
-
-        return chatClient.prompt()
-                .user(userSpec -> userSpec
-                        .text("""
-                                You are a strict data transformation utility. Your ONLY task is to map the factual data
-                                inside the data block below into JSON matching the schema.
-                                
-                                CRITICAL RULE:
-                                - If the text explicitly reads "No books found" or says an error occurred, output "No data found." and an empty array.
-                                - Otherwise, extract the values from the array exactly as written. Never invent data or simulate errors.
-                                Data to transform:
-                                 {data}
-                                """
-                        )
-                        .param("data", searchBookResult)
-                )
-                .advisors(advisorSpec -> advisorSpec
-                        .param(ChatMemory.CONVERSATION_ID, isolatedMappingId)
-                )
-                .advisors(validationAdvisor)
-                .call()
-                .entity(AgentSearchResponse.class, entityParamSpec -> entityParamSpec
-                        .useProviderStructuredOutput()
-                        .validateSchema());
-
+        return new AgentSearchResponse(message, agentSearchResult.books());
     }
 
-        public AgentOrderResponse findOrder(Long orderId, String chatId) {
+    public AgentOrderResponse findOrder(Long orderId, String chatId) {
 
-            var findOrderTool = Arrays.stream(this.mcpTools.getToolCallbacks())
-                    .filter(tool -> "findOrder".equals(tool.getToolDefinition().name()))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("findOrder tool not found"));
+        log.info("FindOrder agent workflow for order id [{}] - chatId: [{}] - START", orderId, chatId);
+        Map<String, Object> promptArguments = Map.of("orderId", orderId);
 
-            log.info("Executing findOrder agent workflow for chatId: {}", chatId);
+        var chatResponse = chatClient.prompt()
+                .user(promptUserSpec -> promptUserSpec
+                        .text(promptTemplates.get("findOrder"))
+                        .params(promptArguments)
+                )
+                .advisors(advisorSpec -> advisorSpec
+                        .advisors(chatMemoryAdvisor)
+                        .param(ChatMemory.CONVERSATION_ID, chatId)
+                )
+                .tools(mcpTools.findOrder())
+                .call()
+                .chatResponse();
 
-            var validationAdvisor = StructuredOutputValidationAdvisor
-                    .builder()
-                    .maxRepeatAttempts(2)
-                    .outputType(AgentOrderResponse.class)
-                    .build();
+        String responseText = getAgentResponseText(chatResponse, mcpTools.findOrder());
 
-            var findOrderResponse = chatClient.prompt()
-                    .system("""
-                            You are a strict order-fetching assistant.
-                            
-                            CRITICAL SAFETY RULES:
-                            1. You MUST execute the 'findOrder' tool to fetch the order data.
-                            2. If the tool returns NO records, an empty list [], an empty string, or an error,
-                               your output response MUST be exactly: "No data found".
-                            3. DO NOT use your internal knowledge, do not invent books, do not guess ISBNs,
-                               and do not make up any response text if the tool returns nothing.
-                            """)
-                    .user(promptUserSpec -> promptUserSpec
-                            .text("""
-                                    You must look up the order using the order management system.
-                                    
-                                    CRITICAL RULE:
-                                    1. Do not use your own knowledge or make up order information.
-                                    2. First, call the 'findOrder' tool with the order ID: {orderId}.
-                                    3. Once you receive the tool response data, extract the order details and format them.
-                                    """)
-                            .param("orderId", orderId)
-                    )
-                    .advisors(advisorSpec -> advisorSpec
-                            .param(ChatMemory.CONVERSATION_ID, chatId)
-                    )
-                    .tools(findOrderTool)
-                    .call()
-                    .content();
+        log.debug("FindOrder tool raw output text received: [{}]", responseText);
 
-            log.info(" Find Order Tool raw output received: {}", findOrderResponse);
-
-            // STEP 2: Safe structural mapping phase
-            String isolatedMappingId = "transform-" + java.util.UUID.randomUUID().toString();
-            return chatClient.prompt()
-                    .user(userSpec -> userSpec
-                            .text("Transform the following text receipt into the required structure: {data}")
-                            .param("data", findOrderResponse)
-                    )
-                    .advisors(advisorSpec -> advisorSpec
-                            .param(ChatMemory.CONVERSATION_ID, isolatedMappingId)
-                    )
-                    .advisors(validationAdvisor)
-                    .call()
-                    .entity(AgentOrderResponse.class, entityParamSpec -> entityParamSpec
-                            .useProviderStructuredOutput()
-                            .validateSchema());
+        if (responseText == null || responseText.isBlank()) {
+            return new AgentOrderResponse("No order found.", null);
         }
+
+        AgentOrderResult result = jsonMapper.readValue(responseText, AgentOrderResult.class);
+
+        var message = getMessage(result);
+        OrderSummary summary = OrderSummary.of(result);
+
+        log.info("FindOrder agent workflow for order id [{}] - chatId: [{}] - RETURNED", orderId, chatId);
+
+        return new AgentOrderResponse(message, summary);
+    }
 }

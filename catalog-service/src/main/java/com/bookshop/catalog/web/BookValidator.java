@@ -9,6 +9,17 @@ import java.util.Map;
 @Component
 public class BookValidator implements Validator {
 
+    private static void verifyFieldErrors(Errors errors, String key, Object value) {
+        switch (value) {
+            case String s when s.isBlank() ->
+                    errors.rejectValue(key, "field.blank", "The " + key + " value should not be empty");
+            case Double d when d <= 0.0 -> errors.rejectValue(key, "field.positive", "The price must be positive");
+            case null -> errors.rejectValue(key, "field.null", "The " + key + " value should not be null");
+            case Object _ -> {
+            }
+        }
+    }
+
     @Override
     public boolean supports(Class<?> clazz) {
         return Map.class.isAssignableFrom(clazz);
@@ -22,16 +33,5 @@ public class BookValidator implements Validator {
             return; // Stop further validation since there are no keys to check
         }
         updates.forEach((key, value) -> verifyFieldErrors(errors, key, value));
-    }
-
-    private static void verifyFieldErrors(Errors errors, String key, Object value) {
-        switch (value) {
-            case String s when s.isBlank() ->
-                    errors.rejectValue(key, "field.blank", "The " + key + " value should not be empty");
-            case Double d when d <= 0.0 ->
-                    errors.rejectValue(key, "field.positive", "The price must be positive");
-            case null -> errors.rejectValue(key, "field.null", "The " + key + " value should not be null");
-            case Object _ -> {}
-        }
     }
 }

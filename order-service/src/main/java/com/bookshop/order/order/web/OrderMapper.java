@@ -47,6 +47,7 @@ public class OrderMapper {
                 OrderStatus.REJECTED,
                 reason);
     }
+
     public Order createRejectedOrder(String title, int quantity, String reason) {
         return Order.of(
                 null,

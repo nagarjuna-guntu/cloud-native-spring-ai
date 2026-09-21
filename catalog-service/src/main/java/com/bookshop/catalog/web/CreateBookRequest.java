@@ -22,5 +22,5 @@ public record CreateBookRequest(
         String author,
         double price,
         String publisher
-        ) {
+) {
 }

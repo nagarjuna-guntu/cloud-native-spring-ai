@@ -10,6 +10,7 @@ services:
     environment:
       - 'BOOK_CATALOG_SERVICE_URL=http://catalog-service:4001'
       - 'BOOK_ORDER_SERVICE_URL=http://order-service:4002'
+      - 'BOOK_AGENT_SERVICE_URL=http://agent-service:4004'
       - 'SPRING_DATA_REDIS_HOST=polar-redis'
       - 'JAVA_TOOL_OPTIONS: --enable-preview'
       - 'MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT=http://grafana-lgtm:4318/v1/logs'
@@ -65,6 +66,19 @@ services:
       - 'MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT=http://grafana-lgtm:4318/v1/logs'
       - 'MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://grafana-lgtm:4318/v1/traces'
       - 'MANAGEMENT_OTLP_METRICS_EXPORT_URL=http://grafana-lgtm:4318/v1/metrics'
+
+  # agent-service:
+  #   image: 'agent-service'
+  #   container_name: 'agent-service'
+  #   ports:
+  #     - '4004:4004'
+  #   depends_on:
+  #     - 'order-service'
+  #     - 'catalog-service'
+  #   environment:
+  #     - 'MANAGEMENT_OPENTELEMETRY_LOGGING_EXPORT_OTLP_ENDPOINT=http://grafana-lgtm:4318/v1/logs'
+  #     - 'MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT=http://grafana-lgtm:4318/v1/traces'
+  #     - 'MANAGEMENT_OTLP_METRICS_EXPORT_URL=http://grafana-lgtm:4318/v1/metrics'
 
   polar-postgres:
     image: 'pgvector/pgvector:pg16'

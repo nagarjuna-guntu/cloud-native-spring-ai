@@ -13,6 +13,6 @@ public class DataAuditConfig {
 
     @Bean
     public AuditorAware<String> getCurrentAuditor() {
-        return () ->  Optional.of("Anonymous");
+        return () -> Optional.of("Anonymous");
     }
 }

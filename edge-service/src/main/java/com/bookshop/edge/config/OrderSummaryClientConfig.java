@@ -28,17 +28,14 @@ public class OrderSummaryClientConfig {
     public WebClientHttpServiceGroupConfigurer httpServiceGroupConfigurer(
             ServiceClientConfigProperties serviceClientProperties) {
 
-
         return groups -> {
             groups.filterByName("order-service")
                     .forEachClient((_, clientBuilder) -> {
                         clientBuilder.baseUrl(serviceClientProperties.orderServiceUrl());
-
                     });
             groups.filterByName("catalog-service")
                     .forEachClient((_, clientBuilder) -> {
                         clientBuilder.baseUrl(serviceClientProperties.catalogServiceUrl());
-
                     });
         };
     }

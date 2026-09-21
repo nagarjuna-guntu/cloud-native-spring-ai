@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -49,7 +50,8 @@ public class OrderService {
     public Order saveAndPublishEvent(Order order) {
         Order savedOrder = orderRepository.save(order);
         if (savedOrder.status() == OrderStatus.ACCEPTED) {
-            orderEventPublisher.publishOrderAcceptedEvent(savedOrder);
+            Instant eventTimestamp = Instant.now();
+            orderEventPublisher.publishOrderAcceptedEvent(savedOrder, eventTimestamp);
         }
         return savedOrder;
     }
@@ -73,7 +75,7 @@ public class OrderService {
     public OrderResponse findOrderById(Long id) {
         return orderRepository.findById(id)
                 .map(orderMapper::toOrderResponse)
-                .orElseThrow(() -> new OrderNotFoundException("The order with ID " + id + "not found"));
+                .orElseThrow(() -> new OrderNotFoundException("The order with ID %d not found".formatted(id)));
     }
 
 }

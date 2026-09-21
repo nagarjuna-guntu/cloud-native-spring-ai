@@ -1,6 +1,10 @@
-You must order the book using the order system.
+Process an order request with the following explicit parameters:
+- Book ISBN (String): {isbn}
+- Order Quantity (Integer Number): {quantity}
 
-CRITICAL RULE:
-1. Do not use your internal knowledge base or make up book information.
-2. Place an order for ISBN: {isbn} with a quantity of {quantity}
-3. Once you receive the tool response data, extract the order information and format them.
+IMPORTANT:
+
+1. ISBN must be a string type, should not be a number type.
+2. quantity must be a number type, should not be a string type.
+2. quantity must be a number between 1 and 5.
+3. Do not convert the quantity to a string type.

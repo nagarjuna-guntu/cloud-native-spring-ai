@@ -17,13 +17,11 @@ public class OrderClient {
     private final WebClient webClient;
     private final ServiceClientConfigProperties clientProperties;
 
-
     public OrderClient(WebClient.Builder builder, ServiceClientConfigProperties clientProperties) {
         this.webClient = builder.baseUrl(clientProperties.orderServiceUrl()).build();
         this.clientProperties = clientProperties;
 
     }
-
 
     public Mono<Order> getOrder(Long id) {
         log.info("Fetching order by id {} ", id);
@@ -34,9 +32,8 @@ public class OrderClient {
                 .timeout(Duration.ofSeconds(1));
     }
 
-
     public Flux<Order> getAllOrdersByUser() {
-        log.info("Fetching order by logged in user..." );
+        log.info("Fetching order by logged in user...");
         return webClient.get()
                 .uri("/orders")
                 .retrieve()

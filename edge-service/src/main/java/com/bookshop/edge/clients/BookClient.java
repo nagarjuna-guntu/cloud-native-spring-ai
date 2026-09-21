@@ -36,7 +36,7 @@ public class BookClient {
     }
 
     //The Cache Key:: book-catalog::booksByIsbn::
-    public Mono<Book> getCachedBook(String isbn, Throwable  ex) {
+    public Mono<Book> getCachedBook(String isbn, Throwable ex) {
         var message = Objects.requireNonNullElse(ex.getCause().getMessage(), ex.getMessage());
         log.error("Fallback for the getBook method with the cause {} ", message);
         var cacheKeyBooksByIsbn = CachedKeys.bookByIsbn(isbn);
@@ -53,6 +53,5 @@ public class BookClient {
                     log.error("Redis error during fallback: {}", error.getMessage());
                     return Mono.error(ex);
                 });
-
     }
 }

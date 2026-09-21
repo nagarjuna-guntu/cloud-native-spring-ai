@@ -1,6 +1,7 @@
 package com.bookshop.agent.web;
 
 import com.bookshop.agent.domain.*;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,13 +19,13 @@ public class BookAgentController {
     @PostMapping("/search")
     public AgentSearchResponse searchBook(@RequestHeader(name = "X_AI_CHAT_ID", defaultValue = "default") String chatId,
                                           @RequestBody AgentSearchRequest request) {
-        log.info(" Search Book X_AI_CHAT_ID = {}", chatId);
+        log.info(" Search Book Request [{}] with X_AI_CHAT_ID header = {}", request, chatId);
         return bookAgentService.searchBook(request, chatId);
     }
 
     @PostMapping("/order")
     public AgentOrderResponse placeOrder(@RequestHeader(name = "X_AI_CHAT_ID", defaultValue = "default") String chatId,
-                                         @RequestBody AgentOrderRequest request) {
+                                         @RequestBody @Valid AgentOrderRequest request) {
         log.info("Place Order X_AI_CHAT_ID = {}", chatId);
         return bookAgentService.placeOrder(request, chatId);
     }

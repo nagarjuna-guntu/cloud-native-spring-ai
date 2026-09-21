@@ -6,4 +6,9 @@ public record AgentSearchResponse(
         String message,
         List<BookSummary> books
 ) {
+    public AgentSearchResponse {
+        books = books == null
+                ? List.of()
+                : List.copyOf(books);
+    }
 }

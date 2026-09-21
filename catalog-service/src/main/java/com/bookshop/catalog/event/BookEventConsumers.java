@@ -1,36 +1,29 @@
 package com.bookshop.catalog.event;
 
+import com.bookshop.catalog.domain.CacheManagerService;
+import com.bookshop.catalog.domain.VectorStoreService;
 import com.bookshop.catalog.web.BookResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.jspecify.annotations.NonNull;
-import org.springframework.ai.document.Document;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
 @Configuration
 @Slf4j
 public class BookEventConsumers {
-    private static final String BOOKS_BY_ISBN = "booksByIsbn";
-    private static final String BOOKS = "books";
 
-    private final CacheManager cacheManager;
+    private final CacheManagerService cacheManagerService;
     private final BookEventMapper bookEventMapper;
-    private final VectorStore vectorStore;
+    private final VectorStoreService vectorStoreService;
 
-    public BookEventConsumers(CacheManager cacheManager, BookEventMapper bookEventMapper, VectorStore vectorStore) {
-        this.cacheManager = cacheManager;
+
+    public BookEventConsumers(CacheManagerService cacheManagerService,
+                              BookEventMapper bookEventMapper,
+                              VectorStoreService vectorStoreService) {
+        this.cacheManagerService = cacheManagerService;
         this.bookEventMapper = bookEventMapper;
-        this.vectorStore = vectorStore;
+        this.vectorStoreService = vectorStoreService;
     }
 
     @Bean
@@ -39,44 +32,16 @@ public class BookEventConsumers {
             log.info("Book created event consumed with ISBN: {}", event.isbn());
             var bookResponse = bookEventMapper.mapToBookResponse(event);
             updateCache(bookResponse);
-            updateVectorIndex(bookResponse); // <--- 2. Sync to AI
+            updateVectorStore(bookResponse); // <--- 2. Sync to AI
         };
     }
 
-    private void updateVectorIndex(BookResponse bookResponse) {
-        try {
-            Document document = generateDocument(bookResponse);
-            vectorStore.add(List.of(document));
-            log.info("Book with ISBN: {} written to vector index successfully.", bookResponse.isbn());
-        } catch (Exception e) {
-            log.error("Failed to add book with ISBN: {} to vector index. Error: {}", bookResponse.isbn(), e.getMessage(), e);
-        }
-    }
-
-    private static @NonNull Document generateDocument(BookResponse bookResponse) {
-        // A. Generate a Stable UUID from the ISBN
-        // This ensures that "ISBN-123" ALWAYS equals UUID "abc-123..."
-        // allowing us to overwrite the old vector when the book updates.
-        String stableId = UUID.nameUUIDFromBytes(bookResponse.isbn().getBytes()).toString();
-        log.info("Generated stable ID for the document: {}", stableId);
-        // B. Construct the Context
-        String content = String.format("Title: %s. Author: %s. Publisher: %s. Price: %.2f",
-                bookResponse.title(), bookResponse.author(), bookResponse.publisher(), bookResponse.price());
-        // C. Metadata (Store ISBN for reverse lookup)
-        Map<String, Object> metadata = Map.of(
-                "isbn", bookResponse.isbn(),
-                "price", bookResponse.price(),
-                "title", bookResponse.title().toLowerCase(),
-                "author", bookResponse.author().toLowerCase(),
-                "publisher", bookResponse.publisher().toLowerCase()
-        );
-        // D. Create Document with the STABLE ID
-        return new Document(stableId, content, metadata);
+    private void updateVectorStore(BookResponse bookResponse) {
+        vectorStoreService.vectorStoreAdd(bookResponse);
     }
 
     private void updateCache(BookResponse bookResponse) {
-        ifCachePresent(BOOKS_BY_ISBN, cache ->  cache.put(bookResponse.isbn(), bookResponse));
-        ifCachePresent(BOOKS, Cache::clear); // clear the existing list cache and rebuild when @Cacheable on getAll methods
+        cacheManagerService.cacheUpdate(bookResponse);
     }
 
     @Bean
@@ -85,16 +50,7 @@ public class BookEventConsumers {
             log.info("Book updated event consumed with ISBN: {}", event.isbn());
             var bookResponse = bookEventMapper.mapToBookResponse(event);
             updateCache(bookResponse);
-            updateVectorIndex(bookResponse);
+            updateVectorStore(bookResponse);
         };
-    }
-
-    private void ifCachePresent(String cacheName, Consumer<Cache> action) {
-        Cache cache = cacheManager.getCache(cacheName);
-        if (cache != null) {
-            action.accept(cache);
-        } else {
-            log.warn("Cache '{}' not configured. Skipping cache operation.", cacheName);
-        }
     }
 }

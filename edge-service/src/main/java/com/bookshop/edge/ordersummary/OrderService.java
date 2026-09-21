@@ -15,11 +15,9 @@ public class OrderService {
         this.orderServiceClient = orderServiceClient;
     }
 
-
     public Mono<Order> findOrderById(Long orderId) {
         return orderServiceClient.findOrderById(orderId);
     }
-
 
     public Flux<Order> getAllOrdersByUser() {
         return orderServiceClient.getAllOrdersByUser();

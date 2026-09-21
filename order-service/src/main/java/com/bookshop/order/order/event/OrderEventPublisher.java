@@ -18,10 +18,10 @@ public class OrderEventPublisher {
         this.streamBridge = streamBridge;
     }
 
-    public void publishOrderAcceptedEvent(Order order) {
+    public void publishOrderAcceptedEvent(Order order, Instant occurredOn) {
         log.info("Publishing OrderAcceptedEvent: {}", order);
         if (order.status() == OrderStatus.ACCEPTED) {
-            var orderAcceptedEvent = new OrderAcceptedEvent(order.id(), Instant.now());
+            var orderAcceptedEvent = new OrderAcceptedEvent(order.id(), occurredOn);
             log.info("Sending order accepted event with id {}", order.id());
             var isSent = streamBridge.send("orderAccepted-out-0", orderAcceptedEvent);
             log.info("Sending data for order with id {} successful ? {}", order.id(), isSent);

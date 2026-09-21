@@ -22,12 +22,12 @@ public class AddTraceIdResponseHeaderFilter implements WebFilter, Ordered {
 
     public AddTraceIdResponseHeaderFilter(Tracer tracer) {
         this.tracer = tracer;
-        log.info("AddTraceIdResponseHeaderFilter created");
+        log.info("AddTraceIdResponseHeaderFilter initialized.");
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        exchange.getResponse().beforeCommit( () -> {
+        exchange.getResponse().beforeCommit(() -> {
             ServerHttpResponse response = exchange.getResponse();
             response.getHeaders().add(TRACE_RESPONSE_HEADER, getTraceResponse());
             return Mono.empty();
@@ -42,11 +42,10 @@ public class AddTraceIdResponseHeaderFilter implements WebFilter, Ordered {
         }
         var traceId = Objects.requireNonNullElse(currentSpan.context().traceId(), "");
         var spanId = Objects.requireNonNullElse(currentSpan.context().spanId(), "");
-        log.info("traceId :: {}, spanId :: {}", traceId, spanId);
+        log.info("traceId :: [{}], spanId :: [{}]", traceId, spanId);
         // Construct W3C compliant traceresponse header
         // Format: 00-{traceId}-{spanId}-01
-        var traceResponse = String.format("00-%s-%s-01", traceId, spanId);
-        return traceResponse;
+        return "00-%s-%s-01".formatted(traceId, spanId);
     }
 
     @Override

@@ -45,12 +45,11 @@ public class CatalogHandler {
                 .switchIfEmpty(handleCacheMiss(cacheKeyBooksAll))
                 // Handles Redis Connection Failures
                 .onErrorResume(this::handleCacheError);
-
     }
 
     public Mono<ServerResponse> getFallbackBooksByIsbn(String ISBN) {
         log.info("CatalogHandler::getFallbackByIsbn is calling for the book with ISBN : {}...", ISBN);
-        var cleanIsbn  = ISBN.startsWith("/") ? ISBN.substring(1) : ISBN;
+        var cleanIsbn = ISBN.startsWith("/") ? ISBN.substring(1) : ISBN;
         var cacheKeyBooksByIsbn = CachedKeys.bookByIsbn(cleanIsbn);
         log.info("Fetching data from the Cache for the key {}", cacheKeyBooksByIsbn);
         return booksByIsbnRedisTemplate.opsForValue()
@@ -60,11 +59,10 @@ public class CatalogHandler {
                 .switchIfEmpty(handleCacheMiss(cacheKeyBooksByIsbn))
                 // Handles Redis Connection Failures
                 .onErrorResume(e -> handleCacheError(e, cleanIsbn));
-
     }
 
     public Mono<ServerResponse> postFallback(ServerRequest serverRequest) {
-       return errorHandler(serverRequest);
+        return errorHandler(serverRequest);
     }
 
     public Mono<ServerResponse> errorHandler(ServerRequest serverRequest) {
@@ -76,7 +74,6 @@ public class CatalogHandler {
             case Throwable ex -> //log exception or save exception to db here
                     ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
                             .body(Mono.just("service not available due to " + ex.getMessage()), String.class);
-
         };
     }
 
@@ -92,6 +89,5 @@ public class CatalogHandler {
         // Logic for when the key is simply not in Redis
         return ServerResponse.status(HttpStatus.NOT_FOUND)
                 .bodyValue("Cache miss for the cache key " + cacheKey);
-
     }
 }

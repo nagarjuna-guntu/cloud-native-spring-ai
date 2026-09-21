@@ -14,7 +14,7 @@ import java.util.concurrent.TimeoutException;
 
 @RestControllerAdvice
 @Slf4j
-public class GatewayExceptionHandler  {
+public class GatewayExceptionHandler {
 
     @ExceptionHandler(WebClientResponseException.class)
     public Mono<ProblemDetail> handleClientResponseException(WebClientResponseException ex) {
@@ -31,7 +31,7 @@ public class GatewayExceptionHandler  {
     @ExceptionHandler(TimeoutException.class)
     public Mono<ProblemDetail> handleTimeoutException(TimeoutException ex) {
         var message = ex.getMessage();
-        log.error("Request has been timed out with the details {}" , message);
+        log.error("Request has been timed out with the details {}", message);
         var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.GATEWAY_TIMEOUT, message);
         return Mono.just(problemDetails);
     }

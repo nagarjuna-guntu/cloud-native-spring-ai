@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.1.0'
+	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -18,9 +18,9 @@ repositories {
 }
 
 
-def springCloudVersion = "2025.1.2"
-def OpenTelemetryVersion= "2.28.1-alpha"
-def springAiVersion = "2.0.0"
+def springCloudVersion = "2025.1.3"
+def OpenTelemetryVersion= "2.28.0-alpha"
+def springAiVersion = "2.0.1"
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'

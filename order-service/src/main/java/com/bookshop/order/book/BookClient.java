@@ -19,24 +19,21 @@ public class BookClient {
     private final RestClient restClient;
     private final RetryTemplate retryTemplate;
 
-    public BookClient(@Qualifier("catalogRestClient") RestClient restClient, RetryTemplate retryTemplate) {
-
+    public BookClient(@Qualifier("catalogRestClient") RestClient restClient,
+                      RetryTemplate retryTemplate) {
         this.restClient = restClient;
         this.retryTemplate = retryTemplate;
-
     }
-
 
     public Book findBookByIsbn(String isbn) {
         log.info("calling findBookByIsbn with ISBN {}", isbn);
         return restClient.get()
-                .uri( "/books/{ISBN}", isbn)
+                .uri("/books/{ISBN}", isbn)
                 .retrieve()
                 .body(Book.class);
     }
 
     public List<Book> searchByTitle(String query) {
-
         log.info("calling searchByTitle with query {}", query);
         return restClient.get()
                 .uri(uri -> uri
@@ -44,7 +41,8 @@ public class BookClient {
                         .queryParam("query", query)
                         .build())
                 .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+                .body(new ParameterizedTypeReference<>() {
+                });
     }
 
     public ApiResponse<Book> searchBook(String query) {

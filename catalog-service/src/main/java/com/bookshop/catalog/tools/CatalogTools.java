@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -20,15 +21,32 @@ public class CatalogTools {
 
     @McpTool(name = "searchBook",
             description = """
-                    This tool allows you to search for books in the catalog based on a query.
-                    The query can be a book title or part title, author, or any relevant keyword.
-                    The tool returns a list of books that match the query.
-                    Each book in the list includes its ISBN, title, author, price, and publisher.
-                    """)
+                    Searches the book catalog using a natural-language query.
+                    
+                    Use this tool to find books by title, part title, author,
+                    publisher or relevant keywords.
+                    
+                    The tool returns matching books with ISBN, title, author,
+                    price, and publisher.
+                    An empty result means no matching books were found.
+                    """,
+            generateOutputSchema = true,
+            annotations = @McpTool.McpAnnotations(
+                    readOnlyHint = true,
+                    destructiveHint = false,
+                    idempotentHint = true,
+                    openWorldHint = false
+            ))
     public List<BookResponse> searchBook(@McpToolParam(
-            description = "The input query can be a book title or part title, author, or any relevant keyword",
+            description = "Natural-language book search query, such as title or part title, author, or any relevant keyword",
             required = true) String query) {
-        log.info("searchBook({})", query);
+
+        log.info("MCP tool called: searchBook with query: {}", query);
+
+        if (!StringUtils.hasText(query)) {
+            throw new IllegalArgumentException("Search query must not be blank");
+        }
+
         return bookService.search(query);
     }
 
