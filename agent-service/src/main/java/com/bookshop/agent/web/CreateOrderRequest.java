@@ -1,11 +1,11 @@
-package com.bookshop.agent.domain;
+package com.bookshop.agent.web;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-public record AgentOrderRequest(
+public record CreateOrderRequest(
 
         @NotBlank(message = "The book ISBN must be defined.")
         String isbn,

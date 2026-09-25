@@ -31,10 +31,7 @@ public class VectorStoreService {
     private final ObservationRegistry observationRegistry;
     private final VectorSearchProperties vectorSearchProperties;
 
-    public VectorStoreService(VectorStore vectorStore,
-                              DocumentMapper documentMapper,
-                              ObservationRegistry observationRegistry,
-                              VectorSearchProperties vectorSearchProperties) {
+    public VectorStoreService(VectorStore vectorStore, DocumentMapper documentMapper, ObservationRegistry observationRegistry, VectorSearchProperties vectorSearchProperties) {
         this.vectorStore = vectorStore;
         this.documentMapper = documentMapper;
         this.observationRegistry = observationRegistry;
@@ -58,26 +55,20 @@ public class VectorStoreService {
      * @throws VectorStoreException when the vector store or embedding infrastructure fails
      */
     public List<Document> vectorStoreSearch(String query) {
-        log.debug("Searching vector store for query: {}", query);
+        log.debug("Searching vector store for query: [{}].", query);
         if (!StringUtils.hasText(query)) {
             log.debug("Aborting vector store search; input query is empty or blank.");
             return List.of();
         }
-        var normalizeQuery = query.strip();
-        return Observation.
-                createNotStarted("catalog.vector.search", observationRegistry)
-                .lowCardinalityKeyValue("search.engine", SEARCH_ENGINE)
-                .highCardinalityKeyValue("search.query", normalizeQuery)
-                .observe(() -> executeSearch(normalizeQuery));
+        var normalizeQuery = query.trim();
+        return Observation.createNotStarted("catalog.vector.search", observationRegistry).lowCardinalityKeyValue("search.engine", SEARCH_ENGINE).highCardinalityKeyValue("search.query", normalizeQuery).observe(() -> executeSearch(normalizeQuery));
     }
 
     private List<Document> executeSearch(String query) {
         log.debug("Executing primary strict vector search for query: [{}]", query);
 
         try {
-            List<Document> strictResults = executeSimilaritySearch(query,
-                    vectorSearchProperties.strict().topK(),
-                    vectorSearchProperties.strict().similarityThreshold());
+            List<Document> strictResults = executeSimilaritySearch(query, vectorSearchProperties.strict().topK(), vectorSearchProperties.strict().similarityThreshold());
 
             if (!strictResults.isEmpty()) {
                 log.debug("Strict vector search returned [{}] result(s)", strictResults.size());
@@ -91,10 +82,7 @@ public class VectorStoreService {
 
             log.debug("Strict vector search returned no results; executing relaxed search");
 
-            List<Document> relaxedResults = executeSimilaritySearch(query,
-                    vectorSearchProperties.relaxed().topK(),
-                    vectorSearchProperties.relaxed().similarityThreshold()
-            );
+            List<Document> relaxedResults = executeSimilaritySearch(query, vectorSearchProperties.relaxed().topK(), vectorSearchProperties.relaxed().similarityThreshold());
 
             markRelaxedResults(relaxedResults);
 
@@ -106,16 +94,11 @@ public class VectorStoreService {
     }
 
     private void markRelaxedResults(List<Document> documents) {
-        documents.forEach(document ->
-                document.getMetadata().put(RETRIEVAL_MODE, RELAXED_RETRIEVAL));
+        documents.forEach(document -> document.getMetadata().put(RETRIEVAL_MODE, RELAXED_RETRIEVAL));
     }
 
     private List<Document> executeSimilaritySearch(String query, int topK, double similarityThreshold) {
-        var searchRequest = SearchRequest.builder()
-                .query(query)
-                .topK(topK)
-                .similarityThreshold(similarityThreshold)
-                .build();
+        var searchRequest = SearchRequest.builder().query(query).topK(topK).similarityThreshold(similarityThreshold).build();
         return vectorStore.similaritySearch(searchRequest);
     }
 
@@ -126,11 +109,8 @@ public class VectorStoreService {
             return;
         }
 
-        var isbn = bookResponse.isbn().strip();
-        Observation.createNotStarted("catalog.vector.add.single", observationRegistry)
-                .lowCardinalityKeyValue("operation.mode", "single_upsert")
-                .highCardinalityKeyValue("book.isbn", bookResponse.isbn())
-                .observe(() -> addSingleDocument(bookResponse, isbn));
+        var isbn = bookResponse.isbn().trim();
+        Observation.createNotStarted("catalog.vector.add.single", observationRegistry).lowCardinalityKeyValue("operation.mode", "single_upsert").highCardinalityKeyValue("book.isbn", bookResponse.isbn()).observe(() -> addSingleDocument(bookResponse, isbn));
     }
 
     private void addSingleDocument(BookResponse book, String isbn) {
@@ -149,19 +129,13 @@ public class VectorStoreService {
         if (bookResponses.isEmpty()) {
             return;
         }
-        Observation.createNotStarted("catalog.vector.add.batch", observationRegistry)
-                .lowCardinalityKeyValue("operation.mode", "batch_upsert")
-                .highCardinalityKeyValue("batch.payload.size", String.valueOf(bookResponses.size()))
-                .observe(() -> addBatch(bookResponses));
+        Observation.createNotStarted("catalog.vector.add.batch", observationRegistry).lowCardinalityKeyValue("operation.mode", "batch_upsert").highCardinalityKeyValue("batch.payload.size", String.valueOf(bookResponses.size())).observe(() -> addBatch(bookResponses));
     }
 
     private void addBatch(Collection<BookResponse> books) {
 
         try {
-            List<Document> documents = books.stream()
-                    .filter(this::isValidBook)
-                    .map(documentMapper::toDocument)
-                    .toList();
+            List<Document> documents = books.stream().filter(this::isValidBook).map(documentMapper::toDocument).toList();
 
             if (documents.isEmpty()) {
                 log.debug("Vector batch insert skipped because no valid documents were produced");
@@ -180,7 +154,7 @@ public class VectorStoreService {
     }
 
     private VectorStoreException handleExceptions(String context, Exception e) {
-        // Modern Java 26 Pattern-Matching Switch classifying exact WebMVC network & db failures
+
         throw switch (e) {
             // Catches situation where Ollama responds with an error code (e.g., model missing or invalid payload)
             case RestClientResponseException apiEx -> {
@@ -203,7 +177,6 @@ public class VectorStoreService {
             }
         };
     }
-
 }
 
 

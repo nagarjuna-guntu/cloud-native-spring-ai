@@ -34,8 +34,6 @@ public class GlobalAgentExceptionHandler {
         log.error("AI Agent Tool [{}] threw exception.", toolName, toolExecutionException);
 
         var problemDetail = switch (toolExecutionException.getCause()) {
-            case IllegalArgumentException illegalArgumentException ->
-                    ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, illegalArgumentException.getMessage());
             case IllegalStateException illegalStateException ->
                     ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_CONTENT, illegalStateException.getMessage());
             case Throwable throwable ->

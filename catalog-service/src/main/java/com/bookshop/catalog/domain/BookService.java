@@ -24,18 +24,20 @@ public class BookService {
     private final BookEventPublisher bookEventPublisher;
     private final BookValidator bookValidator;
     private final VectorStoreService vectorStoreService;
+    private final IsbnValidator isbnValidator;
 
 
     public BookService(BookRepository bookRepository,
                        BookMapper bookMapper,
                        BookEventPublisher bookEventPublisher,
                        BookValidator bookValidator,
-                       VectorStoreService vectorStoreService) {
+                       VectorStoreService vectorStoreService, IsbnValidator isbnValidator) {
         this.bookRepository = bookRepository;
         this.bookMapper = bookMapper;
         this.bookEventPublisher = bookEventPublisher;
         this.bookValidator = bookValidator;
         this.vectorStoreService = vectorStoreService;
+        this.isbnValidator = isbnValidator;
     }
 
     @Cacheable(cacheNames = "books", key = "'ALL'", sync = true)
@@ -115,9 +117,22 @@ public class BookService {
                 .toList();
     }
 
+    public BookResponse findBookByIsbn(String isbn) {
+        return bookRepository.findByIsbn(isbn)
+                .map(bookMapper::toBookResponse)
+                .orElseThrow(() -> new BookNotFoundException("The Book with ISBN %s not found".formatted(isbn)));
+    }
+
     public List<BookResponse> search(String query) {
-        log.info("Searching for books with query: {}", query);
+        log.info("Searching for books with query: [{}].", query);
+
         try {
+            // Phase 0: Direct DB look up if the query keyword is valid ISBN
+            if (isbnValidator.isIsbnCandidate(query)) {
+                log.info("Searching books by ISBN: [{}] - Direct DB lookup instead of Vector Search. ", query);
+                var bookResponse = findBookByIsbn(query);
+                return List.of(bookResponse);
+            }
             // Phase 1: Vector Space Search (Might throw VectorStoreException)
             List<Document> documents = vectorStoreService.vectorStoreSearch(query);
             log.info("Books Search results Count- [{}] ", documents.size());
@@ -146,6 +161,10 @@ public class BookService {
                 case DataAccessException dataAccessException -> {
                     log.error("Database access error during book search: {}", dataAccessException.getMessage(), dataAccessException);
                     yield new BookSearchException("Failed to search for books due to database access error", dataAccessException);
+                }
+                case BookNotFoundException bookNotFoundException -> {
+                    log.error("Book not found: {}", bookNotFoundException.getMessage(), bookNotFoundException);
+                    yield new BookSearchException(bookNotFoundException.getMessage(), bookNotFoundException);
                 }
                 case Throwable throwable -> {
                     log.error("Unexpected error during book search: {}", throwable.getMessage(), throwable);

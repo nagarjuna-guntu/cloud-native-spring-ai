@@ -33,9 +33,7 @@ public class OrderMcpTools {
                     """,
             generateOutputSchema = true,
             annotations = @McpTool.McpAnnotations(
-                    readOnlyHint = false,
                     destructiveHint = false,
-                    idempotentHint = false,
                     openWorldHint = false
             )
     )

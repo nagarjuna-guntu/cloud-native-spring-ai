@@ -1,14 +1,11 @@
 package com.bookshop.catalog.tools;
 
 import com.bookshop.catalog.domain.BookService;
-import com.bookshop.catalog.web.BookResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
 
 @Component
 @Slf4j
@@ -28,7 +25,6 @@ public class CatalogTools {
                     
                     The tool returns matching books with ISBN, title, author,
                     price, and publisher.
-                    An empty result means no matching books were found.
                     """,
             generateOutputSchema = true,
             annotations = @McpTool.McpAnnotations(
@@ -37,17 +33,17 @@ public class CatalogTools {
                     idempotentHint = true,
                     openWorldHint = false
             ))
-    public List<BookResponse> searchBook(@McpToolParam(
+    public BookSearchResult searchBook(@McpToolParam(
             description = "Natural-language book search query, such as title or part title, author, or any relevant keyword",
             required = true) String query) {
 
-        log.info("MCP tool called: searchBook with query: {}", query);
+        log.info("MCP tool searchBook with query: [{}] - CALLED", query);
 
         if (!StringUtils.hasText(query)) {
             throw new IllegalArgumentException("Search query must not be blank");
         }
-
-        return bookService.search(query);
+        var books = bookService.search(query);
+        log.info("MCP tool searchBook with query: [{}] and Book(s) Count [{}] - RETURNED", query, books.size());
+        return BookSearchResult.of(books);
     }
-
 }

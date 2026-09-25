@@ -3,12 +3,15 @@ package com.bookshop.catalog.demo;
 
 import com.bookshop.catalog.domain.*;
 import com.bookshop.catalog.web.BookMapper;
+import com.bookshop.catalog.web.BookResponse;
+import com.bookshop.catalog.web.IsbnValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.util.List;
+import java.util.Objects;
 
 
 @Slf4j
@@ -19,14 +22,16 @@ public class BookDataLoader {
     private final BookMapper bookMapper;
     private final VectorStoreService vectorStoreService;
     private final JdbcClient jdbcClient;
+    private final IsbnValidator isbnValidator;
 
     public BookDataLoader(BookRepository bookRepository, CacheManagerService cacheManagerService, BookMapper bookMapper,
-                          VectorStoreService vectorStoreService, JdbcClient jdbcClient) {
+                          VectorStoreService vectorStoreService, JdbcClient jdbcClient, IsbnValidator isbnValidator) {
         this.bookRepository = bookRepository;
         this.cacheManagerService = cacheManagerService;
         this.bookMapper = bookMapper;
         this.vectorStoreService = vectorStoreService;
         this.jdbcClient = jdbcClient;
+        this.isbnValidator = isbnValidator;
     }
 
     @EventListener(ApplicationReadyEvent.class)
@@ -69,26 +74,34 @@ public class BookDataLoader {
                 47.4, Publisher.Manning.getName());
 
         var books = List.of(book1, book2, book3, book4, book5, book6);
-        var savedBooks = bookRepository.saveAll(books);
-        preloadBookCaches(savedBooks);
+        List<BookResponse> savedBooks = preloadDatabase(books);
+        preloadCaches(savedBooks);
         preloadVectorStore(savedBooks);
 
     }
 
-    private void preloadVectorStore(List<Book> savedBooks) {
-        log.info("Preloading vector store with books count {}", savedBooks.size());
-        var documents = savedBooks.stream()
+    private List<BookResponse> preloadDatabase(List<Book> books) {
+        var validBooks = books.stream()
+                .filter(this::validateBook)
+                .toList();
+        var savedBooks = bookRepository.saveAll(validBooks);
+        return savedBooks.stream()
                 .map(bookMapper::toBookResponse)
                 .toList();
-        vectorStoreService.vectorStoreAdd(documents);
     }
 
-    private void preloadBookCaches(List<Book> savedBooks) {
+    private boolean validateBook(Book book) {
+        return Objects.nonNull(book) && isbnValidator.isIsbnCandidate(book.isbn());
+    }
+
+    private void preloadVectorStore(List<BookResponse> savedBooks) {
+        log.info("Preloading vector store with books count {}", savedBooks.size());
+        vectorStoreService.vectorStoreAdd(savedBooks);
+    }
+
+    private void preloadCaches(List<BookResponse> savedBooks) {
         log.info("Preloading book caches with books count {}", savedBooks.size());
-        var bookResponses = savedBooks.stream()
-                .map(bookMapper::toBookResponse)
-                .toList();
-        bookResponses.forEach(cacheManagerService::cacheAdd);
-        cacheManagerService.cacheAll(bookResponses);
+        savedBooks.forEach(cacheManagerService::cacheAdd);
+        cacheManagerService.cacheAll(savedBooks);
     }
 }
