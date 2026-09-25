@@ -7,7 +7,6 @@ and an autonomous AI agentic layer driven by Spring AI and the Model Context Pro
 
 ## 1. Stateless Microservices
 
-*
 * edge-service (API Gateway)
 * Technology: Spring Cloud WebFlux (Reactive Stack)
    * Role: Single entry point for all system ingress traffic. It manages intelligent routing rules and applies bulkhead, retry, and circuit-breaker
@@ -28,20 +27,17 @@ and an autonomous AI agentic layer driven by Spring AI and the Model Context Pro
 * Technology: Spring Boot + Spring Cloud Stream
    * Role: Completely reactive post-purchase operational worker. Listens exclusively to event topologies to orchestrate material shipping
    * and order fulfillment schedules.
-*
 
 ------------------------------
 ## 2. Stateful Infrastructure Layer
 The persistence and streaming network utilizes a strict Database-per-Service structural pattern to ensure zero runtime coupling between service boundaries.
 
-* 
 * PostgreSQL & pgvector: Separate, network-isolated transactional nodes handle schema separation. The catalog-service database includes
 * the pgvector extension to convert, store, and score heavy embeddings arrays (Title:Author:Publisher:Price).
 * Redis Cluster: Configured as a distributed Cache-Aside cache layer. Holds fast hot-reads mapped into BOOKS:ISBN and BOOKS:ALL collections
 * to dramatically shield relational resources from high read throughput.
 * RabbitMQ: High-availability event fabric integrated via Spring Cloud Stream. It acts as the eventual consistency backplane for cross-domain
-* orchestrations and immediate out-of-band updates.
-* 
+* orchestrations and immediate out-of-band updates. 
 
 ------------------------------
 ## Asynchronous Event-Driven Flows## A. Order Fulfillment Lifecycle
@@ -69,15 +65,13 @@ Whenever an inventory change occurs, the catalog-service leverages a self-consum
 ## 3. Enterprise Observability Suite
 Comprehensive, system-wide runtime tracking is baked natively into the image binaries:
 
-* 
 * Telemetry Pipeline: Microservices include the standard OpenTelemetry (OTel) starter to continuously stream standardized, zero-alloc traces,
 * metric dimensions, and semantic logs without manual configuration.
 * Monitoring Cluster: Standardized telemetry charts ingest straight into a centralized Grafana LGTM Stack instance:
 * Loki: Distributed log aggregation.
    * Tempo: High-scale distributed tracing tracking requests from edge-service down to the DB.
    * Mimir: Long-term time series metrics storage.
-   * Grafana: Central visual dashboards mapping out the overall holistic system health.
-* 
+   * Grafana: Central visual dashboards mapping out the overall holistic system health. 
 
 ------------------------------
 
