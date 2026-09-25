@@ -3,6 +3,8 @@
 The BookShop ecosystem is built on a modern, cloud-native blueprint leveraging Spring Boot microservices, asynchronous event-driven choreographies, 
 and an autonomous AI agentic layer driven by Spring AI and the Model Context Protocol (MCP).
 
+![System Architecture Diagram](BookShop-Agentic-System.png)
+
 ## 1. Stateless Microservices
 
 *
