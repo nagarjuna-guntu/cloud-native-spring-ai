@@ -29,17 +29,18 @@ public class MCPClientConfig {
     }
 
     @Bean
-    ChatClientBuilderCustomizer addAdvisors(MessageChatMemoryAdvisor messageChatMemoryAdvisor) {
-        return builder -> builder
-                .defaultSystem(SYSTEM_PROMPT)
-                .defaultAdvisors(
-                        SimpleLoggerAdvisor.builder().build());
+    ChatClientBuilderCustomizer addSystemPrompt() {
+        return builder -> builder.defaultSystem(SYSTEM_PROMPT);
     }
 
     @Bean
-    MessageChatMemoryAdvisor messageChatMemoryAdvisor(ChatMemory chatMemory) {
-        return MessageChatMemoryAdvisor.builder(chatMemory)
-                .build();
+    ChatClientBuilderCustomizer addLogger() {
+        return builder -> builder.defaultAdvisors(SimpleLoggerAdvisor.builder().build());
+    }
+
+    @Bean
+    MessageChatMemoryAdvisor chatMemoryAdvisor(ChatMemory chatMemory) {
+        return MessageChatMemoryAdvisor.builder(chatMemory).build();
     }
 
     @Bean
