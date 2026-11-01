@@ -134,7 +134,7 @@ public class BookService {
                 return List.of(bookResponse);
             }
             // Phase 1: Vector Space Search (Might throw VectorStoreException)
-            List<Document> documents = vectorStoreService.vectorStoreSearch(query);
+            List<Document> documents = vectorStoreService.search(query);
             log.info("Books Search results Count- [{}] ", documents.size());
             if (documents.isEmpty()) {
                 return List.of();

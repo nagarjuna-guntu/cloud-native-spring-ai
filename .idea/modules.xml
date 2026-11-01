@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/cloud-native-spring-ai.iml" filepath="$PROJECT_DIR$/.idea/cloud-native-spring-ai.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/dispatch-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/dispatch-service.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/edge-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/edge-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/order-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/order-service.main.iml" />
     </modules>
   </component>
 </project>

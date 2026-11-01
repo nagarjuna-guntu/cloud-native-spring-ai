@@ -96,7 +96,7 @@ public class BookDataLoader {
 
     private void preloadVectorStore(List<BookResponse> savedBooks) {
         log.info("Preloading vector store with books count {}", savedBooks.size());
-        vectorStoreService.vectorStoreAdd(savedBooks);
+        vectorStoreService.add(savedBooks);
     }
 
     private void preloadCaches(List<BookResponse> savedBooks) {

@@ -1,75 +1,75 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.1'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '4.2.0-RC1'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.bookshop'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(26)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(27)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 
-def springCloudVersion = "2025.1.3"
-def OpenTelemetryVersion= "2.28.0-alpha"
-def springAiVersion = "2.0.1"
+def springCloudVersion = "2026.0.0-RC1"
+def OpenTelemetryVersion = "2.28.0-alpha"
+def springAiVersion = "2.1.0-M1"
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-flyway'
-	implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
-	implementation 'org.flywaydb:flyway-database-postgresql'
-	implementation 'org.springframework.boot:spring-boot-starter-restclient'
-	implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$OpenTelemetryVersion"
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'org.postgresql:postgresql'
-	annotationProcessor 'org.projectlombok:lombok'
-	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-	testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-opentelemetry-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
-	testImplementation 'org.springframework.boot:spring-boot-starter-restclient-test'
-	testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder'
-	testCompileOnly 'org.projectlombok:lombok'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	testAnnotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    implementation 'org.springframework.boot:spring-boot-starter-opentelemetry'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webmvc'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.springframework.boot:spring-boot-starter-restclient'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$OpenTelemetryVersion"
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-opentelemetry-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-restclient-test'
+    testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder'
+    testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
-	}
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:$springAiVersion"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
-	options.compilerArgs += ['-parameters']
+    options.compilerArgs += ['-parameters']
 }
 
 tasks.named('bootBuildImage') {
-	imageName = "${project.name}"
-	environment = [
-			'BP_JVM_VERSION' : '26.*'
-	]
+    imageName = "${project.name}"
+    environment = [
+            'BP_JVM_VERSION': '27.*'
+    ]
 
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }

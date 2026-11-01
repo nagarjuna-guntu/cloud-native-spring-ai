@@ -15,7 +15,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Collection;
-
 import java.util.List;
 
 @Service
@@ -54,55 +53,76 @@ public class VectorStoreService {
      * @return matching vector documents, or an empty list when there are no matches
      * @throws VectorStoreException when the vector store or embedding infrastructure fails
      */
-    public List<Document> vectorStoreSearch(String query) {
+    public List<Document> search(String query) {
         log.debug("Searching vector store for query: [{}].", query);
         if (!StringUtils.hasText(query)) {
             log.debug("Aborting vector store search; input query is empty or blank.");
             return List.of();
         }
         var normalizeQuery = query.trim();
-        return Observation.createNotStarted("catalog.vector.search", observationRegistry).lowCardinalityKeyValue("search.engine", SEARCH_ENGINE).highCardinalityKeyValue("search.query", normalizeQuery).observe(() -> executeSearch(normalizeQuery));
+        return Observation.createNotStarted("catalog.vector.search", observationRegistry)
+                .lowCardinalityKeyValue("search.engine", SEARCH_ENGINE)
+                .highCardinalityKeyValue("search.query", normalizeQuery)
+                .observe(() -> executeSearch(normalizeQuery));
     }
 
     private List<Document> executeSearch(String query) {
         log.debug("Executing primary strict vector search for query: [{}]", query);
 
         try {
-            List<Document> strictResults = executeSimilaritySearch(query, vectorSearchProperties.strict().topK(), vectorSearchProperties.strict().similarityThreshold());
+            List<Document> strictResults = similaritySearch(
+                    query,
+                    vectorSearchProperties.strict().topK(),
+                    vectorSearchProperties.strict().similarityThreshold()
+            );
 
             if (!strictResults.isEmpty()) {
                 log.debug("Strict vector search returned [{}] result(s)", strictResults.size());
                 return strictResults;
             }
 
-            if (!vectorSearchProperties.relaxed().enabled()) {
-                log.debug("Strict vector search returned no results; relaxed search is disabled");
-                return List.of();
-            }
+            return switch (vectorSearchProperties.relaxed().enabled()) {
+                case true -> executeRelaxedSearch(query);
+                case false -> {
+                    log.debug("Strict vector search returned no results; relaxed search is disabled");
+                    yield List.of();
+                }
+            };
 
-            log.debug("Strict vector search returned no results; executing relaxed search");
-
-            List<Document> relaxedResults = executeSimilaritySearch(query, vectorSearchProperties.relaxed().topK(), vectorSearchProperties.relaxed().similarityThreshold());
-
-            markRelaxedResults(relaxedResults);
-
-            log.debug("Relaxed vector search returned [{}] result(s)", relaxedResults.size());
-            return relaxedResults;
         } catch (Exception e) {
             throw handleExceptions("SEARCH: '" + query + "'", e);
         }
+    }
+
+    private List<Document> executeRelaxedSearch(String query) {
+        log.debug("Strict vector search returned no results; executing relaxed search");
+        List<Document> relaxedResults = similaritySearch(
+                query,
+                vectorSearchProperties.relaxed().topK(),
+                vectorSearchProperties.relaxed().similarityThreshold()
+        );
+
+        markRelaxedResults(relaxedResults);
+
+        log.debug("Relaxed vector search returned [{}] result(s)", relaxedResults.size());
+        return relaxedResults;
+
     }
 
     private void markRelaxedResults(List<Document> documents) {
         documents.forEach(document -> document.getMetadata().put(RETRIEVAL_MODE, RELAXED_RETRIEVAL));
     }
 
-    private List<Document> executeSimilaritySearch(String query, int topK, double similarityThreshold) {
-        var searchRequest = SearchRequest.builder().query(query).topK(topK).similarityThreshold(similarityThreshold).build();
+    private List<Document> similaritySearch(String query, int topK, double similarityThreshold) {
+        var searchRequest = SearchRequest.builder()
+                .query(query)
+                .topK(topK)
+                .similarityThreshold(similarityThreshold)
+                .build();
         return vectorStore.similaritySearch(searchRequest);
     }
 
-    public void vectorStoreAdd(BookResponse bookResponse) {
+    public void add(BookResponse bookResponse) {
 
         if (!isValidBook(bookResponse)) {
             log.warn("Refusing to add null or invalid book record to vector store.");
@@ -110,7 +130,10 @@ public class VectorStoreService {
         }
 
         var isbn = bookResponse.isbn().trim();
-        Observation.createNotStarted("catalog.vector.add.single", observationRegistry).lowCardinalityKeyValue("operation.mode", "single_upsert").highCardinalityKeyValue("book.isbn", bookResponse.isbn()).observe(() -> addSingleDocument(bookResponse, isbn));
+        Observation.createNotStarted("catalog.vector.add.single", observationRegistry)
+                .lowCardinalityKeyValue("operation.mode", "single_upsert")
+                .highCardinalityKeyValue("book.isbn", bookResponse.isbn())
+                .observe(() -> addSingleDocument(bookResponse, isbn));
     }
 
     private void addSingleDocument(BookResponse book, String isbn) {
@@ -124,12 +147,15 @@ public class VectorStoreService {
         }
     }
 
-    public void vectorStoreAdd(Collection<BookResponse> bookResponses) {
+    public void add(Collection<BookResponse> bookResponses) {
         log.debug("Adding [{}] books to vector store.", bookResponses.size());
         if (bookResponses.isEmpty()) {
             return;
         }
-        Observation.createNotStarted("catalog.vector.add.batch", observationRegistry).lowCardinalityKeyValue("operation.mode", "batch_upsert").highCardinalityKeyValue("batch.payload.size", String.valueOf(bookResponses.size())).observe(() -> addBatch(bookResponses));
+        Observation.createNotStarted("catalog.vector.add.batch", observationRegistry)
+                .lowCardinalityKeyValue("operation.mode", "batch_upsert")
+                .highCardinalityKeyValue("batch.payload.size",
+                        String.valueOf(bookResponses.size())).observe(() -> addBatch(bookResponses));
     }
 
     private void addBatch(Collection<BookResponse> books) {

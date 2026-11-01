@@ -37,7 +37,7 @@ public class BookEventConsumers {
     }
 
     private void updateVectorStore(BookResponse bookResponse) {
-        vectorStoreService.vectorStoreAdd(bookResponse);
+        vectorStoreService.add(bookResponse);
     }
 
     private void updateCache(BookResponse bookResponse) {
