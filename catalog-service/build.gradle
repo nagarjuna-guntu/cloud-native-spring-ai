@@ -18,7 +18,7 @@ repositories {
 }
 
 ext {
-    set('OpenTelemetryVersion', "2.28.0-alpha")
+    set('OpenTelemetryVersion', "2.33.1-alpha")
     set('springCloudVersion', "2026.0.0-RC1")
     set('springAiVersion', "2.1.0-M1")
 }
